@@ -4,6 +4,12 @@ import { GITHUB_URL, WS_URL_KEY } from "../lib/constants";
 const DEFAULT_PROTOCOL = "ws://";
 const DEFAULT_PORT = "8765";
 
+function detectPnaBlock(): boolean {
+  const isChromium = /Chrome\//.test(navigator.userAgent) && !/Firefox\//.test(navigator.userAgent);
+  const isLocal = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+  return isChromium && !isLocal;
+}
+
 function parseStoredUrl(stored: string): { ip: string; full: string } {
   if (!stored) return { ip: "", full: "" };
   try {
@@ -25,6 +31,7 @@ export function ConnectScreen({
   const [ip, setIp] = useState(parsed.ip);
   const [advanced, setAdvanced] = useState(false);
   const [fullUrl, setFullUrl] = useState(parsed.full);
+  const pnaBlocked = detectPnaBlock();
 
   const buildUrl = () => `${DEFAULT_PROTOCOL}${ip.trim()}:${DEFAULT_PORT}/`;
 
@@ -54,6 +61,14 @@ export function ConnectScreen({
         <p className="connect-subtitle">
           Connect to your Airseekers Tron mower
         </p>
+
+        {pnaBlocked && (
+          <div className="connect-pna-warning">
+            <strong>Chrome cannot connect to local devices</strong> from a hosted page.
+            Use <strong>Firefox</strong>, or run the dashboard locally
+            (<code>npm run serve</code>).
+          </div>
+        )}
 
         <form className="connect-form" onSubmit={handleSubmit}>
           <label className="connect-label" htmlFor={advanced ? "ws-full" : "ws-ip"}>

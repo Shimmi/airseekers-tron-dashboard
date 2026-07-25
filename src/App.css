@@ -231,6 +231,24 @@
   text-align: center;
 }
 
+.connect-pna-warning {
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--yellow) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--yellow) 30%, transparent);
+  font-size: 13px;
+  color: var(--text1);
+  line-height: 1.5;
+}
+
+.connect-pna-warning code {
+  font-size: 12px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--surface2);
+}
+
 .connect-links {
   display: flex;
   justify-content: center;
