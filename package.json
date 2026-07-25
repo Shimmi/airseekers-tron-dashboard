@@ -8,8 +8,7 @@
   "homepage": "https://github.com/Shimmi/airseekers-tron",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Shimmi/airseekers-tron.git",
-    "directory": "app"
+    "url": "https://github.com/Shimmi/airseekers-tron-dashboard.git"
   },
   "type": "module",
   "scripts": {
@@ -18,7 +17,7 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "serve": "npm run build && npx serve dist -l 8080",
-    "deploy": "npm run build && cp dist/index.html dist/200.html && surge dist http://tron-dashboard.surge.sh"
+    "deploy": "npm run build && cp dist/index.html dist/200.html && surge dist http://tron-dashboard-dev.surge.sh"
   },
   "dependencies": {
     "@foxglove/rosmsg": "^5.0.5",
