@@ -82,7 +82,7 @@ export function Dashboard({
         <LogWidget logs={logs} />
       </div>
       <footer className="dashboard-footer">
-        <span>Made with <span className="dashboard-footer-heart">♥</span> by Shimmi in Czechia</span>
+        <span>Made with <span className="dashboard-footer-heart">♥</span> by <a href="https://github.com/Shimmi" target="_blank" rel="noopener noreferrer">Shimmi</a> in Czechia</span>
         <span className="dashboard-footer-links">
           <a href={`${GITHUB_URL}/issues`} target="_blank" rel="noopener noreferrer">Bug?</a>
           <span className="connect-links-sep">·</span>
