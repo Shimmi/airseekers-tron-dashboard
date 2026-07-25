@@ -3,6 +3,8 @@
 Real-time telemetry dashboard for the Airseekers Tron robotic mower.
 Connects directly to the mower's Foxglove WebSocket bridge — no cloud, no account, no official app needed.
 
+![Tron Dashboard](tron-dashboard.png)
+
 ## Stack
 
 - **Vite + React + TypeScript**
