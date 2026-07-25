@@ -1,0 +1,44 @@
+{
+  "name": "tron-dashboard",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Real-time diagnostic dashboard for the Airseekers Tron robotic mower",
+  "author": "Jiří Šimeček",
+  "license": "MIT",
+  "homepage": "https://github.com/Shimmi/airseekers-tron",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Shimmi/airseekers-tron.git",
+    "directory": "app"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint",
+    "preview": "vite preview",
+    "serve": "npm run build && npx serve dist -l 8080",
+    "deploy": "npm run build && cp dist/index.html dist/200.html && surge dist http://tron-dashboard.surge.sh"
+  },
+  "dependencies": {
+    "@foxglove/rosmsg": "^5.0.5",
+    "@foxglove/rosmsg-serialization": "^2.1.2",
+    "@foxglove/ws-protocol": "^0.8.0",
+    "@turf/area": "^7.3.5",
+    "mapbox-gl": "^3.27.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-map-gl": "^8.1.1",
+    "vite-plugin-pwa": "^1.3.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "@types/node": "^24.13.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
+    "oxlint": "^1.71.0",
+    "typescript": "~6.0.2",
+    "vite": "^8.1.1"
+  }
+}

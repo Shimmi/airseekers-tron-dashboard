@@ -1,0 +1,27 @@
+name: Deploy to Surge
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build
+        env:
+          VITE_MAPBOX_TOKEN: ${{ secrets.VITE_MAPBOX_TOKEN }}
+
+      - run: cp dist/index.html dist/200.html
+
+      - name: Deploy to Surge
+        run: npx surge dist tron-dashboard.surge.sh --token ${{ secrets.SURGE_TOKEN }}
