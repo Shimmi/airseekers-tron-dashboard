@@ -198,6 +198,7 @@ function Indicator({
       className="status-ind"
       style={{ color: healthVar(health) }}
       title={title}
+      data-umami-event={`strip-${label.toLowerCase()}`}
       onClick={target ? scrollToTarget : undefined}
       role={target ? "button" : undefined}
       tabIndex={target ? 0 : undefined}

@@ -104,12 +104,12 @@ export function ConnectScreen({
             </div>
           )}
 
-          <button className="connect-btn" type="submit">
+          <button className="connect-btn" type="submit" data-umami-event="connect">
             Connect
           </button>
         </form>
 
-        <button className="connect-advanced-toggle" type="button" onClick={toggleAdvanced}>
+        <button className="connect-advanced-toggle" type="button" onClick={toggleAdvanced} data-umami-event="connect-advanced-toggle">
           {advanced ? "Simple mode" : "Advanced"}
         </button>
 
@@ -118,15 +118,15 @@ export function ConnectScreen({
         </p>
 
         <div className="connect-links">
-          <a href={`${GITHUB_URL}/issues`} target="_blank" rel="noopener noreferrer">
+          <a href={`${GITHUB_URL}/issues`} target="_blank" rel="noopener noreferrer" data-umami-event="link-bugs">
             Report a bug
           </a>
           <span className="connect-links-sep">·</span>
-          <a href={`${GITHUB_URL}/discussions`} target="_blank" rel="noopener noreferrer">
+          <a href={`${GITHUB_URL}/discussions`} target="_blank" rel="noopener noreferrer" data-umami-event="link-discussions">
             Discussions
           </a>
           <span className="connect-links-sep">·</span>
-          <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
+          <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" data-umami-event="link-github">
             GitHub
           </a>
         </div>

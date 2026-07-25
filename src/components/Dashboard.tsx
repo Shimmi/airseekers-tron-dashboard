@@ -84,11 +84,11 @@ export function Dashboard({
       <footer className="dashboard-footer">
         <span>Made with <span className="dashboard-footer-heart">♥</span> by <a href="https://github.com/Shimmi" target="_blank" rel="noopener noreferrer">Shimmi</a> in Czechia</span>
         <span className="dashboard-footer-links">
-          <a href={`${GITHUB_URL}/issues`} target="_blank" rel="noopener noreferrer">Bug?</a>
+          <a href={`${GITHUB_URL}/issues`} target="_blank" rel="noopener noreferrer" data-umami-event="footer-bugs">Bug?</a>
           <span className="connect-links-sep">·</span>
-          <a href={`${GITHUB_URL}/discussions`} target="_blank" rel="noopener noreferrer">Feedback</a>
+          <a href={`${GITHUB_URL}/discussions`} target="_blank" rel="noopener noreferrer" data-umami-event="footer-feedback">Feedback</a>
           <span className="connect-links-sep">·</span>
-          <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" data-umami-event="footer-github">GitHub</a>
         </span>
       </footer>
     </main>

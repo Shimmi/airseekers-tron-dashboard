@@ -64,6 +64,7 @@ function ActionButton({
   return (
     <button
       className={`ctrl-btn ctrl-btn--${variant} ctrl-btn--${status.state}`}
+      data-umami-event={`control-${label.toLowerCase().replace(/\s+/g, "-")}`}
       onClick={onClick}
       disabled={!available || isPending}
       title={isError ? status.message : undefined}
