@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import posthog from "posthog-js";
 import { type ConnectionState, FoxgloveClient } from "../lib/foxglove";
 import {
   type BatteryData,
@@ -252,10 +253,12 @@ export function useMowerData() {
         ? { state: "ok" }
         : { state: "error", message: detail || "Unknown error" };
       if (kind === "stop") {
+        posthog.capture("mower_stop_result", { success: ok });
         setStopStatus(result);
         if (stopResetTimer.current) clearTimeout(stopResetTimer.current);
         stopResetTimer.current = setTimeout(() => setStopStatus({ state: "idle" }), 5000);
       } else {
+        posthog.capture("mower_estop_cleared_result", { success: ok });
         setClearEstopStatus(result);
         if (clearEstopResetTimer.current) clearTimeout(clearEstopResetTimer.current);
         clearEstopResetTimer.current = setTimeout(() => setClearEstopStatus({ state: "idle" }), 5000);
@@ -292,6 +295,7 @@ export function useMowerData() {
     const callId = clientRef.current?.callService("/controller/ctrl", { arg: "stop" });
     if (callId != null) {
       pendingCallIds.current.set(callId, "stop");
+      posthog.capture("mower_stop_sent");
       setStopStatus({ state: "pending" });
     }
   }, []);
@@ -300,6 +304,7 @@ export function useMowerData() {
     const callId = clientRef.current?.callService("/clear_estop", {});
     if (callId != null) {
       pendingCallIds.current.set(callId, "clearEstop");
+      posthog.capture("mower_estop_cleared");
       setClearEstopStatus({ state: "pending" });
     }
   }, []);

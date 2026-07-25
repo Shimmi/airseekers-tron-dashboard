@@ -25,6 +25,7 @@
     "@foxglove/ws-protocol": "^0.8.0",
     "@turf/area": "^7.3.5",
     "mapbox-gl": "^3.27.0",
+    "posthog-js": "^1.407.2",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-map-gl": "^8.1.1",

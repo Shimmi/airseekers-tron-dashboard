@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import posthog from "posthog-js";
 import type { ConnectionState } from "../lib/foxglove";
 
 const DOT_CLASS: Record<ConnectionState, string> = {
@@ -28,6 +29,7 @@ export function Header({
     const next = theme === "dark" ? "light" : "dark";
     document.documentElement.setAttribute("data-theme", next);
     localStorage.setItem("tron-theme", next);
+    posthog.capture("theme_toggled", { theme: next });
     setTheme(next);
   }, [theme]);
 
@@ -44,7 +46,13 @@ export function Header({
             <span className="header-status-label">
               {LABEL[connectionState]}
             </span>
-            <button className="header-disconnect" onClick={onDisconnect}>
+            <button
+              className="header-disconnect"
+              onClick={() => {
+                posthog.capture("mower_disconnected");
+                onDisconnect();
+              }}
+            >
               Disconnect
             </button>
           </div>
