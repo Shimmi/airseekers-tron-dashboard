@@ -12,6 +12,7 @@ if (posthogKey && posthogHost) {
     api_host: posthogHost,
     defaults: "2026-05-30",
   });
+  posthog.register({ app_version: __APP_VERSION__ });
 } else if (import.meta.env.DEV) {
   console.error(
     "VITE_PUBLIC_POSTHOG_KEY or VITE_PUBLIC_POSTHOG_HOST variable required by PostHog is missing or un-configured, this causes events to be silently missed. This error stops appearing once VITE_PUBLIC_POSTHOG_KEY and VITE_PUBLIC_POSTHOG_HOST are configured"

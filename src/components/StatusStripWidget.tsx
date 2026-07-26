@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import posthog from "posthog-js";
 import type { BatteryData, LocalizationData, MowerStatusData } from "../lib/parsers";
 import {
   batteryColor,
@@ -190,6 +191,7 @@ function Indicator({
 }) {
   const scrollToTarget = () => {
     if (!target) return;
+    posthog.capture("strip_indicator_clicked", { indicator: label.toLowerCase() });
     document.getElementById(target)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
