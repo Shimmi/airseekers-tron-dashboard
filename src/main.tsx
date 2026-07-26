@@ -10,6 +10,7 @@ const posthogHost = import.meta.env.VITE_PUBLIC_POSTHOG_HOST as string | undefin
 if (posthogKey && posthogHost) {
   posthog.init(posthogKey, {
     api_host: posthogHost,
+    cross_subdomain_cookie: false,
     defaults: "2026-05-30",
   });
   posthog.register({ app_version: __APP_VERSION__ });
