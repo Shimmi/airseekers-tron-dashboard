@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import posthog from "posthog-js";
 import { GITHUB_URL, WS_URL_KEY } from "../lib/constants";
 
 const DEFAULT_PROTOCOL = "ws://";
@@ -40,6 +41,7 @@ export function ConnectScreen({
     const url = advanced ? fullUrl.trim() : buildUrl();
     if (!url || (!advanced && !ip.trim())) return;
     localStorage.setItem(WS_URL_KEY, url);
+    posthog.capture("mower_connected", { advanced_mode: advanced });
     onConnect(url);
   };
 
@@ -50,6 +52,7 @@ export function ConnectScreen({
       const parsed = parseStoredUrl(fullUrl);
       setIp(parsed.ip);
     }
+    posthog.capture("advanced_mode_toggled", { enabled: !advanced });
     setAdvanced(!advanced);
   };
 
