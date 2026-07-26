@@ -40,6 +40,8 @@ export function Dashboard({
         ? false
         : null);
 
+  const nrtkNetMode = data.config?.NRTKNetMode as string | undefined ?? null;
+
   return (
     <main className="dashboard">
       <div className="dashboard-grid">
@@ -60,7 +62,9 @@ export function Dashboard({
         <GpsWidget
           localization={data.localization}
           gpsInfo={data.gpsInfo}
+          refInfo={data.refInfo}
           nrtkEnabled={nrtkEnabled}
+          nrtkNetMode={nrtkNetMode}
           id="widget-gps"
         />
         <StatusWidget data={data.mowerStatus} id="widget-mower-status" />

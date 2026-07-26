@@ -82,13 +82,13 @@ export function getMotionStatus(status: number | null): string {
 
 export function getPrecision(status: string): PrecisionLevel {
   if (status.includes("NARROW_INT"))
-    return { label: "Centimeter", short: "Fixed", detail: "RTK fixed integer — highest accuracy", variant: "green" };
+    return { label: "Centimeter", short: "Fixed", detail: "Carrier-phase ambiguities resolved — may toggle near threshold", variant: "green" };
   if (status.includes("NARROW_FLOAT"))
-    return { label: "Sub-meter", short: "Float", detail: "RTK float — converging to full fix", variant: "yellow" };
+    return { label: "Sub-meter", short: "Float", detail: "Ambiguities not yet fixed — can toggle even when signal looks unchanged", variant: "yellow" };
   if (status.includes("WIDE_INT"))
-    return { label: "Decimeter", short: "W-Int", detail: "Wide-lane integer fix", variant: "yellow" };
+    return { label: "Decimeter", short: "W-Int", detail: "Wide-lane ambiguities resolved — intermediate accuracy", variant: "yellow" };
   if (status.includes("WIDE_FLOAT"))
-    return { label: "Sub-meter", short: "W-Float", detail: "Wide-lane float solution", variant: "yellow" };
+    return { label: "Sub-meter", short: "W-Float", detail: "Wide-lane float — ambiguities not yet fixed", variant: "yellow" };
   if (status === "DGPS")
     return { label: "1–2 m", short: "DGPS", detail: "Differential GPS correction only", variant: "red" };
   if (status === "SINGLE")

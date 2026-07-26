@@ -246,6 +246,7 @@ export class FoxgloveClient {
       "/robot_config",
       "/task_info",
       "/mower_base/net_status",
+      "/mower_gps_node/ref_info",
       "/rosout",
       "/map",
       "/cover/polygon",

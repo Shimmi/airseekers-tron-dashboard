@@ -180,6 +180,19 @@ export function mapGpsInfo(msg: Record<string, unknown>): GpsInfoData | null {
   };
 }
 
+export interface RefInfoData {
+  version: string;
+  runTime: number;
+  online: boolean;
+}
+
+export function mapRefInfo(msg: Record<string, unknown>): RefInfoData {
+  const version = String(msg.version ?? "");
+  const runTime = Number(msg.run_time ?? 0);
+  const online = version !== "" || runTime > 0;
+  return { version, runTime, online };
+}
+
 export interface RosLogEntry {
   time: string;
   level: "debug" | "info" | "warn" | "error" | "fatal";

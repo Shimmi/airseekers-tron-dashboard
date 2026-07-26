@@ -1,16 +1,20 @@
-import type { GpsInfoData, LocalizationData } from "../lib/parsers";
+import type { GpsInfoData, LocalizationData, RefInfoData } from "../lib/parsers";
 import { colorForValue, getFusionError, getLocState, getPrecision, rssiColor, type Health } from "../lib/status";
 import { Badge, Card } from "./Card";
 
 export function GpsWidget({
   localization,
   gpsInfo,
+  refInfo,
   nrtkEnabled,
+  nrtkNetMode,
   id,
 }: {
   localization: LocalizationData | null;
   gpsInfo: GpsInfoData | null;
+  refInfo: RefInfoData | null;
   nrtkEnabled: boolean | null;
+  nrtkNetMode: string | null;
   id?: string;
 }) {
   const satsVisible = localization?.satellites ?? null;
@@ -21,6 +25,14 @@ export function GpsWidget({
   const locAlert = fusion && fusion.health === "red";
   const visionActive = localization?.locState != null && localization.locState > 0;
   const locState = visionActive ? getLocState(localization!.locState) : null;
+
+  const loraRssi = localization?.loraRssi;
+  const refStation = localization?.refStation;
+  // Corrections actively flowing = link is FINE or COARSE (not FAIL, not null)
+  const loraLinkOk = refStation === "FINE" || refStation === "COARSE";
+  // RTK Base is the active correction source only when link is up AND NRTK is off
+  const loraActive = loraLinkOk && nrtkEnabled !== true;
+  const baseOnline = refInfo?.online ?? null;
 
   return (
     <Card title="GPS / RTK" id={id}>
@@ -65,25 +77,39 @@ export function GpsWidget({
         </div>
       </div>
 
-      {/* Metrics with descriptions */}
+      {/* ── CORRECTIONS ── */}
+      <div className="gps-section-header">Corrections</div>
+      <div className="gps-corrections">
+        <CorrectionChannel
+          label="RTK Base"
+          hint="LoRa radio link"
+          active={loraActive}
+          dimmed={!loraLinkOk && baseOnline === false}
+          metrics={[
+            { label: "RSSI", value: loraRssi != null ? `${loraRssi} dBm` : "--", color: loraRssi != null ? rssiColor(loraRssi) : undefined },
+            { label: "Link", value: refStation ?? "--", color: refStation === "FINE" ? "green" : refStation === "COARSE" ? "yellow" : refStation === "FAIL" ? "red" : undefined },
+            { label: "Base FW", value: baseOnline === true && refInfo!.version ? refInfo!.version : "--" },
+          ]}
+        />
+        <CorrectionChannel
+          label="NRTK"
+          hint="Corrections via cellular"
+          active={nrtkEnabled === true}
+          metrics={[
+            { label: "Status", value: nrtkEnabled != null ? (nrtkEnabled ? "Enabled" : "Off") : "--", color: nrtkEnabled ? "green" : undefined },
+            ...(nrtkNetMode ? [{ label: "Mode", value: nrtkNetMode === "auto" ? "Adaptive" : nrtkNetMode }] : []),
+          ]}
+        />
+      </div>
+
+      {/* ── RECEIVER ── */}
+      <div className="gps-section-header">Receiver</div>
       <div className="gps-metrics">
         <GpsMetric
           label="Satellites"
-          hint="Locked by receiver · 12+ green, 8+ yellow, <8 red"
+          hint="Locked by mower's own antenna"
           value={satsTracked ?? "--"}
           color={satColor !== "gray" ? satColor : undefined}
-        />
-        <GpsMetric
-          label="LoRa RSSI"
-          hint="Base station signal · above −60 is good"
-          value={localization?.loraRssi != null ? `${localization.loraRssi} dBm` : "--"}
-          color={localization?.loraRssi != null ? rssiColor(localization.loraRssi) : undefined}
-        />
-        <GpsMetric
-          label="Base Station"
-          hint="RTK correction detail · FINE = full accuracy"
-          value={localization?.refStation ?? "--"}
-          color={localization?.refStation === "FINE" ? "green" : localization?.refStation === "COARSE" ? "yellow" : undefined}
         />
         <GpsMetric
           label="GPS Quality"
@@ -99,17 +125,6 @@ export function GpsWidget({
           unit=" dB-Hz"
           color={typeof gpsInfo?.snr === "number" ? colorForValue(gpsInfo.snr, 30, 20) : undefined}
         />
-        <GpsMetric
-          label="NRTK"
-          hint="Network RTK corrections via cellular"
-          value={
-            nrtkEnabled != null
-              ? <Badge variant={nrtkEnabled ? "green" : "gray"}>
-                  {nrtkEnabled ? "ENABLED" : "DISABLED"}
-                </Badge>
-              : "--"
-          }
-        />
         {locState && (
           <GpsMetric
             label="Vision Loc"
@@ -120,6 +135,39 @@ export function GpsWidget({
         )}
       </div>
     </Card>
+  );
+}
+
+function CorrectionChannel({
+  label,
+  hint,
+  active,
+  dimmed,
+  metrics,
+}: {
+  label: string;
+  hint: string;
+  active: boolean;
+  dimmed?: boolean;
+  metrics: { label: string; value: React.ReactNode; color?: Health }[];
+}) {
+  const cls = `gps-correction-card${active ? " gps-correction-card--active" : ""}${dimmed ? " gps-correction-card--dimmed" : ""}`;
+  return (
+    <div className={cls}>
+      <div className="gps-correction-header">
+        <span className={`gps-correction-dot${active ? " gps-correction-dot--on" : ""}`} />
+        <span className="gps-correction-label">{label}</span>
+      </div>
+      <span className="gps-correction-hint">{hint}</span>
+      {metrics.map((m) => (
+        <div key={m.label} className="gps-correction-metric">
+          <span className="gps-correction-metric-label">{m.label}</span>
+          <span className={`gps-correction-metric-value${m.color ? ` gps-metric-value--${m.color}` : ""}`}>
+            {m.value}
+          </span>
+        </div>
+      ))}
+    </div>
   );
 }
 

@@ -9,6 +9,7 @@ import {
   type NavSatFixData,
   type OccupancyGridData,
   type PolygonData,
+  type RefInfoData,
   type RosLogEntry,
   mapBattery,
   mapGeoJsonTask,
@@ -18,6 +19,7 @@ import {
   mapNavSatFix,
   mapOccupancyGrid,
   mapPolygon,
+  mapRefInfo,
   mapRosLog,
   mapStringJson,
 } from "../lib/parsers";
@@ -33,6 +35,7 @@ export interface MowerData {
   network: Record<string, unknown> | null;
   map: OccupancyGridData | null;
   boundary: PolygonData | null;
+  refInfo: RefInfoData | null;
   geojsonTask: unknown | null;
   fix: NavSatFixData | null;
   fixFused: NavSatFixData | null;
@@ -64,6 +67,7 @@ export function useMowerData() {
     network: null,
     map: null,
     boundary: null,
+    refInfo: null,
     geojsonTask: null,
     fix: null,
     fixFused: null,
@@ -151,6 +155,11 @@ export function useMowerData() {
           case "/mower_base/net_status": {
             const network = mapStringJson(msg);
             setData((d) => ({ ...d, network }));
+            break;
+          }
+          case "/mower_gps_node/ref_info": {
+            const refInfo = mapRefInfo(msg);
+            setData((d) => ({ ...d, refInfo }));
             break;
           }
           case "/map": {
