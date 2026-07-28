@@ -26,10 +26,10 @@ function tempColor(t: number): string {
   return "var(--text)";
 }
 
-function currentDirection(status: BatteryData["status"]): string | null {
-  if (status === "CHARGING") return "into battery";
-  if (status === "DISCHARGING") return "from battery";
-  return null;
+function currentLabel(status: BatteryData["status"]): { label: string; arrow: string; cssClass: string } {
+  if (status === "CHARGING") return { label: "Charging", arrow: "▲ ", cssClass: "battery-current-arrow--in" };
+  if (status === "DISCHARGING") return { label: "Draw", arrow: "▼ ", cssClass: "" };
+  return { label: "Standby", arrow: "", cssClass: "" };
 }
 
 export function BatteryWidget({
@@ -48,7 +48,7 @@ export function BatteryWidget({
   const error = batteryHealth?.error ?? "0";
   const health = data?.health;
   const showHealthBadge = health && health !== "UNKNOWN" && health !== "GOOD";
-  const direction = data ? currentDirection(data.status) : null;
+  const cur = data ? currentLabel(data.status) : null;
 
   return (
     <Card title="Battery" id={id}>
@@ -103,17 +103,15 @@ export function BatteryWidget({
       </div>
 
       <MetricRow
-        label="Current"
+        label={cur?.label ?? "Current"}
         value={
           data ? (
-            <span title={direction ?? undefined}>
-              {direction && (
-                <span className={`battery-current-arrow ${direction === "into battery" ? "battery-current-arrow--in" : ""}`}>
-                  {direction === "into battery" ? "▲" : "▼"}{" "}
-                </span>
+            <>
+              {cur?.arrow && (
+                <span className={`battery-current-arrow ${cur.cssClass}`}>{cur.arrow}</span>
               )}
               {Math.abs(data.current)} A
-            </span>
+            </>
           ) : (
             "--"
           )
