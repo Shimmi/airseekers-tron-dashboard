@@ -23,7 +23,7 @@ export function mapBattery(msg: Record<string, unknown>): BatteryData {
   return {
     voltage: parseFloat((voltage / 10).toFixed(1)),
     percentage: Math.round(raw * 100),
-    current: Math.round(current),
+    current: parseFloat((current / 10).toFixed(1)),
     status: BATTERY_STATUS_NAMES[statusIdx] || "UNKNOWN",
   };
 }
