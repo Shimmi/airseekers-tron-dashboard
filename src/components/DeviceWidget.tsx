@@ -80,8 +80,25 @@ function CopyDebugButton({ debugText }: { debugText: string }) {
   }, [debugText]);
 
   return (
-    <button className="debug-copy-btn" onClick={handleCopy}>
-      {copied ? "Copied!" : "Copy Debug Info"}
+    <button
+      className={`debug-copy-btn${copied ? " debug-copy-btn--copied" : ""}`}
+      onClick={handleCopy}
+      title={copied ? "Copied!" : "Copy debug info"}
+    >
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        {copied ? (
+          <>
+            <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" />
+            <rect x="8" y="2" width="8" height="4" rx="1" />
+            <path d="M9 14l2 2 4-4" />
+          </>
+        ) : (
+          <>
+            <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" />
+            <rect x="8" y="2" width="8" height="4" rx="1" />
+          </>
+        )}
+      </svg>
     </button>
   );
 }
