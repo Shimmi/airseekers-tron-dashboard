@@ -606,6 +606,29 @@
   color: var(--text3);
 }
 
+.debug-copy-btn {
+  padding: 4px 10px;
+  border: 1px solid var(--text3);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text2);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.debug-copy-btn:hover {
+  background: var(--surface2);
+  color: var(--text);
+  border-color: var(--text2);
+}
+
+.debug-copy-btn:active {
+  transform: scale(0.97);
+}
+
 /* ── Status Strip Widget ── */
 
 .status-strip {

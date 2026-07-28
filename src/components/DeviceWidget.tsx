@@ -1,5 +1,8 @@
+import { useCallback, useState } from "react";
+import posthog from "posthog-js";
 import type { GpsInfoData } from "../lib/parsers";
 import { Card, Chevron } from "./Card";
+import { copyToClipboard } from "../lib/debugInfo";
 
 function cleanFirmware(raw: string): { short: string; full: string } {
   const match = raw.match(/v?(\d+\.\d+\.\d+)/);
@@ -11,11 +14,13 @@ export function DeviceWidget({
   sensorInfo,
   config,
   network,
+  debugText,
 }: {
   gpsInfo: GpsInfoData | null;
   sensorInfo: Record<string, unknown> | null;
   config: Record<string, unknown> | null;
   network: Record<string, unknown> | null;
+  debugText: string;
 }) {
   const rawFw = str(sensorInfo?.mower_package_version);
   const fw = rawFw ? cleanFirmware(rawFw) : null;
@@ -34,6 +39,7 @@ export function DeviceWidget({
             {fw && <span className="device-firmware" title={fw.full}>{fw.short}</span>}
             {locked && <span className="device-lock">Device Locked</span>}
           </div>
+          <CopyDebugButton debugText={debugText} />
           <span className="expand-hint">more</span>
           <Chevron />
         </summary>
@@ -56,6 +62,28 @@ function str(v: unknown): string | undefined {
   if (v == null) return undefined;
   const s = String(v);
   return s && s !== "undefined" ? s : undefined;
+}
+
+function CopyDebugButton({ debugText }: { debugText: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    copyToClipboard(debugText).then((ok) => {
+      if (ok) {
+        posthog.capture("debug_info_copied");
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    });
+  }, [debugText]);
+
+  return (
+    <button className="debug-copy-btn" onClick={handleCopy}>
+      {copied ? "Copied!" : "Copy Debug Info"}
+    </button>
+  );
 }
 
 function DeviceRow({ label, value, hint }: { label: string; value?: string; hint?: string }) {

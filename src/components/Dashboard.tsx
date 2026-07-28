@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import type { ServiceCallStatus, MowerData, LogEntry } from "../hooks/useMowerData";
 import type { RosLogEntry } from "../lib/parsers";
 import { BatteryWidget } from "./BatteryWidget";
@@ -12,6 +13,7 @@ import { StatusStripWidget } from "./StatusStripWidget";
 import { StatusWidget } from "./StatusWidget";
 import { GITHUB_URL } from "../lib/constants";
 import { TaskWidget } from "./TaskWidget";
+import { buildDebugInfo } from "../lib/debugInfo";
 
 export function Dashboard({
   data,
@@ -42,6 +44,11 @@ export function Dashboard({
 
   const nrtkNetMode = data.config?.NRTKNetMode as string | undefined ?? null;
 
+  const debugText = useMemo(
+    () => buildDebugInfo(data, nrtkEnabled),
+    [data, nrtkEnabled],
+  );
+
   return (
     <main className="dashboard">
       <div className="dashboard-grid">
@@ -50,6 +57,7 @@ export function Dashboard({
           sensorInfo={data.sensorInfo}
           config={data.config}
           network={data.network}
+          debugText={debugText}
         />
         <StatusStripWidget
           battery={data.battery}
