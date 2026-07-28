@@ -5,13 +5,18 @@ import { Chevron } from "./Card";
 export function LogWidget({ logs }: { logs: LogEntry[] }) {
   const ref = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState(false);
+  const hasBeenOpened = useRef(false);
   const collapsedBaseline = useRef(0);
+
+  if (!hasBeenOpened.current) collapsedBaseline.current = logs.length;
 
   const collapsedUnseen = expanded ? 0 : logs.length - collapsedBaseline.current;
   const collapsedHasAlert =
-    !expanded && logs.slice(collapsedBaseline.current).some((e) => e.level === "error");
+    !expanded &&
+    logs.slice(collapsedBaseline.current).some((e) => e.level === "error");
 
   const toggleExpanded = useCallback(() => {
+    hasBeenOpened.current = true;
     collapsedBaseline.current = logs.length;
     setExpanded((prev) => !prev);
   }, [logs.length]);

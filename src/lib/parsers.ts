@@ -1,8 +1,15 @@
+const HEALTH_NAMES = [
+  "UNKNOWN", "GOOD", "OVERHEAT", "DEAD", "OVERVOLTAGE", "UNSPEC_FAILURE", "COLD", "WATCHDOG", "SAFETY_TIMER",
+] as const;
+
+export type BatteryHealth = (typeof HEALTH_NAMES)[number];
+
 export interface BatteryData {
   voltage: number;
   percentage: number;
   current: number;
   status: "UNKNOWN" | "CHARGING" | "DISCHARGING" | "NOT_CHARGING" | "FULL";
+  health: BatteryHealth;
 }
 
 const BATTERY_STATUS_NAMES = [
@@ -19,12 +26,29 @@ export function mapBattery(msg: Record<string, unknown>): BatteryData {
   const current = fin(msg.current);
   const raw = fin(msg.percentage);
   const statusIdx = fin(msg.power_supply_status);
+  const healthIdx = fin(msg.power_supply_health);
 
   return {
     voltage: parseFloat((voltage / 10).toFixed(1)),
     percentage: Math.round(raw * 100),
     current: parseFloat((current / 10).toFixed(1)),
     status: BATTERY_STATUS_NAMES[statusIdx] || "UNKNOWN",
+    health: HEALTH_NAMES[healthIdx] || "UNKNOWN",
+  };
+}
+
+export interface BatteryHealthData {
+  temperature: number | null;
+  error: string;
+}
+
+export function mapBatteryHealth(msg: Record<string, unknown>): BatteryHealthData {
+  const temp = fin(msg.battery_temperature);
+  const rawError = msg.battery_error;
+  const error = typeof rawError === "bigint" ? String(rawError) : String(fin(rawError));
+  return {
+    temperature: temp > 0 ? temp : null,
+    error,
   };
 }
 

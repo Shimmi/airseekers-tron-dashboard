@@ -253,6 +253,7 @@ export class FoxgloveClient {
       "/geojson_task",
       "/fix_fused",
       "/fix",
+      "/mower_base/battery_health",
     ];
 
     for (const topic of targets) {

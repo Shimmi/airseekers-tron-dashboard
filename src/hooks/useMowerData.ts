@@ -3,6 +3,7 @@ import posthog from "posthog-js";
 import { type ConnectionState, FoxgloveClient } from "../lib/foxglove";
 import {
   type BatteryData,
+  type BatteryHealthData,
   type GpsInfoData,
   type LocalizationData,
   type MowerStatusData,
@@ -12,6 +13,7 @@ import {
   type RefInfoData,
   type RosLogEntry,
   mapBattery,
+  mapBatteryHealth,
   mapGeoJsonTask,
   mapGpsInfo,
   mapLocalization,
@@ -26,6 +28,7 @@ import {
 
 export interface MowerData {
   battery: BatteryData | null;
+  batteryHealth: BatteryHealthData | null;
   mowerStatus: MowerStatusData | null;
   localization: LocalizationData | null;
   gpsInfo: GpsInfoData | null;
@@ -58,6 +61,7 @@ export function useMowerData() {
     useState<ConnectionState>("disconnected");
   const [data, setData] = useState<MowerData>({
     battery: null,
+    batteryHealth: null,
     mowerStatus: null,
     localization: null,
     gpsInfo: null,
@@ -111,6 +115,11 @@ export function useMowerData() {
           case "/battery": {
             const battery = mapBattery(msg);
             setData((d) => ({ ...d, battery }));
+            break;
+          }
+          case "/mower_base/battery_health": {
+            const batteryHealth = mapBatteryHealth(msg);
+            setData((d) => ({ ...d, batteryHealth }));
             break;
           }
           case "/mower_base/status": {

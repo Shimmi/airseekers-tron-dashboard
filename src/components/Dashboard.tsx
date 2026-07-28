@@ -58,7 +58,7 @@ export function Dashboard({
           mowerStatus={data.mowerStatus}
           nrtkEnabled={nrtkEnabled}
         />
-        <BatteryWidget data={data.battery} id="widget-battery" />
+        <BatteryWidget data={data.battery} batteryHealth={data.batteryHealth} id="widget-battery" />
         <GpsWidget
           localization={data.localization}
           gpsInfo={data.gpsInfo}
@@ -87,12 +87,15 @@ export function Dashboard({
       </div>
       <footer className="dashboard-footer">
         <span>Made with <span className="dashboard-footer-heart">♥</span> by <a href="https://github.com/Shimmi" target="_blank" rel="noopener noreferrer">Shimmi</a> in Czechia</span>
+        <span className="dashboard-footer-version">v{__APP_VERSION__}</span>
         <span className="dashboard-footer-links">
           <a href={`${GITHUB_URL}/issues`} target="_blank" rel="noopener noreferrer" data-umami-event="footer-bugs">Bug?</a>
           <span className="connect-links-sep">·</span>
           <a href={`${GITHUB_URL}/discussions`} target="_blank" rel="noopener noreferrer" data-umami-event="footer-feedback">Feedback</a>
           <span className="connect-links-sep">·</span>
           <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" data-umami-event="footer-github">GitHub</a>
+          <span className="connect-links-sep">·</span>
+          <span className="dashboard-footer-version dashboard-footer-version--mobile">v{__APP_VERSION__}</span>
         </span>
       </footer>
     </main>

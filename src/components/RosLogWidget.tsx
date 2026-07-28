@@ -38,7 +38,10 @@ export function RosLogWidget({ logs }: { logs: RosLogEntry[] }) {
   const [filter, setFilter] = useState<LevelFilter>("all");
   const unseenRef = useRef(0);
   const [unseen, setUnseen] = useState(0);
+  const hasBeenOpened = useRef(false);
   const collapsedBaseline = useRef(0);
+
+  if (!hasBeenOpened.current) collapsedBaseline.current = logs.length;
 
   const collapsedUnseen = expanded ? 0 : logs.length - collapsedBaseline.current;
   const collapsedHasAlert =
@@ -48,6 +51,7 @@ export function RosLogWidget({ logs }: { logs: RosLogEntry[] }) {
       .some((e) => LEVEL_SEVERITY[e.level] >= LEVEL_SEVERITY.warn);
 
   const toggleExpanded = useCallback(() => {
+    hasBeenOpened.current = true;
     collapsedBaseline.current = logs.length;
     setExpanded((prev) => !prev);
   }, [logs.length]);

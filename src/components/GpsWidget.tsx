@@ -102,8 +102,8 @@ export function GpsWidget({
         />
       </div>
 
-      {/* ── RECEIVER ── */}
-      <div className="gps-section-header">Receiver</div>
+      {/* ── MOWER ── */}
+      <div className="gps-section-header">Mower</div>
       <div className="gps-metrics">
         <GpsMetric
           label="Satellites"
