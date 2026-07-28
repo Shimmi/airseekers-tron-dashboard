@@ -12,6 +12,7 @@ import {
   type PolygonData,
   type RefInfoData,
   type RosLogEntry,
+  type TaskData,
   mapBattery,
   mapBatteryHealth,
   mapGeoJsonTask,
@@ -24,6 +25,7 @@ import {
   mapRefInfo,
   mapRosLog,
   mapStringJson,
+  mapTask,
 } from "../lib/parsers";
 
 export interface MowerData {
@@ -34,7 +36,7 @@ export interface MowerData {
   gpsInfo: GpsInfoData | null;
   sensorInfo: Record<string, unknown> | null;
   config: Record<string, unknown> | null;
-  task: Record<string, unknown> | null;
+  task: TaskData | null;
   network: Record<string, unknown> | null;
   map: OccupancyGridData | null;
   boundary: PolygonData | null;
@@ -157,7 +159,7 @@ export function useMowerData() {
             break;
           }
           case "/task_info": {
-            const task = mapStringJson(msg);
+            const task = mapTask(msg);
             setData((d) => ({ ...d, task }));
             break;
           }

@@ -12,6 +12,7 @@ import type { MapLayerMouseEvent } from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import area from "@turf/area";
 import type { NavSatFixData } from "../lib/parsers";
+import { ZONE_TYPE, AREA_TYPES, formatArea } from "../lib/geojson";
 
 const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
 
@@ -21,18 +22,7 @@ const STYLES = {
 } as const;
 type StyleKey = keyof typeof STYLES;
 
-// /geojson_task feature `type` enum (see recon/tron-geojson-schema.md).
-const TYPE = {
-  MOWING: 1,
-  NO_GO: 2,
-  CHANNEL: 3,
-  DOCK_APPROACH: 4,
-  DOCK_STATION: 5,
-  CHARGE_POINT: 6,
-  UNDOCK_POINT: 7,
-  NRTK_REF: 8,
-  OBSTACLE: 9,
-} as const;
+const TYPE = ZONE_TYPE;
 
 // Literal hex (mapbox paint expressions can't read CSS vars), aligned with the
 // app theme palette.
@@ -59,10 +49,6 @@ const TYPE_LABEL: Record<number, string> = {
   [TYPE.NRTK_REF]: "NRTK reference",
   [TYPE.OBSTACLE]: "Obstacle",
 };
-
-// Only zones + no-go get an area readout (per product decision); everything
-// else is name/type only.
-const AREA_TYPES = new Set<number>([TYPE.MOWING, TYPE.NO_GO]);
 
 // ── Layers, ordered bottom → top. Mowing fill sits under everything else. ──
 
@@ -221,11 +207,6 @@ function computeBounds(geojson: unknown): [[number, number], [number, number]] |
   }
   if (!Number.isFinite(minLng)) return null;
   return [[minLng, minLat], [maxLng, maxLat]];
-}
-
-function formatArea(m2: number): string {
-  if (m2 < 10) return `${m2.toFixed(1)} m²`;
-  return `${Math.round(m2)} m²`;
 }
 
 /**

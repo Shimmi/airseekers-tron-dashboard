@@ -258,6 +258,62 @@ export function mapStringJson(msg: Record<string, unknown>): Record<string, unkn
   }
 }
 
+// ── Task ──
+
+export interface TaskZoneParams {
+  areaId: string;
+  cutterHeight: number;
+  cutSpeed: number;
+  zigzagDis: number;
+  numPerimeters: number;
+}
+
+export interface TaskData {
+  state: string;
+  type: string;
+  runTime: string;
+  topArea: number | null;
+  remainingArea: number | null;
+  mowed: number | null;
+  params: TaskZoneParams[];
+}
+
+const MIN_RUNTIME_SECONDS = 30;
+
+function parseRunTimeSeconds(rt: string): number {
+  const parts = rt.split(":").map(Number);
+  if (parts.length !== 3 || parts.some(Number.isNaN)) return 0;
+  return parts[0] * 3600 + parts[1] * 60 + parts[2];
+}
+
+export function mapTask(msg: Record<string, unknown>): TaskData {
+  const raw = mapStringJson(msg);
+  const state = String(raw.state ?? "");
+  const type = String(raw.type ?? "");
+  const runTime = String(raw.runTime ?? "");
+  const topArea = raw.topArea != null ? Number(raw.topArea) : null;
+  const remainingArea = raw.remainingArea != null ? Number(raw.remainingArea) : null;
+
+  let mowed: number | null = null;
+  if (topArea != null && remainingArea != null) {
+    const diff = topArea - remainingArea;
+    const runtimeOk = parseRunTimeSeconds(runTime) >= MIN_RUNTIME_SECONDS;
+    const valuesOk = remainingArea <= topArea && diff >= 0;
+    mowed = runtimeOk && valuesOk ? diff : null;
+  }
+
+  const rawParams = Array.isArray(raw.params) ? raw.params : [];
+  const params: TaskZoneParams[] = rawParams.map((p: Record<string, unknown>) => ({
+    areaId: String(p.areaId ?? ""),
+    cutterHeight: Number(p.cutterHeight ?? 0),
+    cutSpeed: Number(p.cutSpeed ?? 0),
+    zigzagDis: Number(p.zigzagDis ?? 0),
+    numPerimeters: Number(p.numPerimeters ?? 0),
+  }));
+
+  return { state, type, runTime, topArea, remainingArea, mowed, params };
+}
+
 export interface NavSatFixData {
   lat: number;
   lon: number;

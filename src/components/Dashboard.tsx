@@ -76,7 +76,7 @@ export function Dashboard({
           id="widget-gps"
         />
         <StatusWidget data={data.mowerStatus} id="widget-mower-status" />
-        <TaskWidget data={data.task} />
+        <TaskWidget data={data.task} geojsonTask={data.geojsonTask} />
         <NetworkWidget data={data.network} id="widget-network" />
         <ControlWidget
           stopAvailable={services.includes("/controller/ctrl")}
