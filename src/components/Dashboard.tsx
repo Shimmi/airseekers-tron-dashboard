@@ -89,6 +89,7 @@ export function Dashboard({
         <MapWidget
           geojsonTask={data.geojsonTask}
           position={data.fixFused ?? data.fix}
+          heading={data.heading ?? data.localization?.pose?.yaw ?? null}
         />
         <RosLogWidget logs={rosLogs} />
         <LogWidget logs={logs} />

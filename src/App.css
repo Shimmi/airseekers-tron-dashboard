@@ -1407,16 +1407,16 @@
   border-radius: 0;
 }
 
-/* Robot marker (rendered inside a react-map-gl <Marker>). */
-.map-robot {
+/* Map marker images (rendered inside react-map-gl <Marker>). */
+.map-marker-img {
   display: block;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--accent);
-  border: 2px solid #0c1220;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent);
   cursor: pointer;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
+  transition: transform 0.3s ease;
+}
+
+.map-robot-img {
+  filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.6));
 }
 
 .map-controls {
@@ -1538,15 +1538,15 @@
 }
 
 .map-swatch--dock {
-  background: color-mix(in srgb, #22d3ee 30%, transparent);
-  border: 1px solid #22d3ee;
+  background: color-mix(in srgb, #8b90a0 15%, transparent);
+  border: 1px dashed #8b90a0;
 }
 
-.map-legend-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--accent);
+.map-legend-icon {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.4));
 }
 
 .map-empty {

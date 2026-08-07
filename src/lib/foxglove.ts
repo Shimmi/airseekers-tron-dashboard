@@ -254,6 +254,7 @@ export class FoxgloveClient {
       "/fix_fused",
       "/fix",
       "/mower_base/battery_health",
+      "/heading_fused",
     ];
 
     for (const topic of targets) {

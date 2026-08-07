@@ -346,8 +346,29 @@ export function mapGeoJsonTask(msg: Record<string, unknown>): unknown | null {
   const text = msg.geojson;
   if (typeof text !== "string") return null;
   try {
-    return JSON.parse(text);
+    const parsed = JSON.parse(text) as GeoJSON.FeatureCollection;
+    closeUnclosedRings(parsed);
+    return parsed;
   } catch {
     return null;
+  }
+}
+
+export function mapHeadingFused(msg: Record<string, unknown>): number | null {
+  const v = msg.data;
+  return typeof v === "number" && Number.isFinite(v) ? v : null;
+}
+
+function closeUnclosedRings(fc: GeoJSON.FeatureCollection): void {
+  for (const feature of fc.features ?? []) {
+    if (feature.geometry?.type !== "Polygon") continue;
+    for (const ring of (feature.geometry as GeoJSON.Polygon).coordinates) {
+      if (ring.length < 2) continue;
+      const first = ring[0];
+      const last = ring[ring.length - 1];
+      if (first[0] !== last[0] || first[1] !== last[1]) {
+        ring.push([...first]);
+      }
+    }
   }
 }

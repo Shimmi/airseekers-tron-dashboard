@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Map, {
   Layer,
   Marker,
@@ -69,15 +69,13 @@ const mowingOutline: LayerProps = {
 const otherPolyFill: LayerProps = {
   id: "poly-fill",
   type: "fill",
-  filter: ["in", ["get", "type"], ["literal", [TYPE.NO_GO, TYPE.DOCK_APPROACH, TYPE.DOCK_STATION, TYPE.OBSTACLE]]],
+  filter: ["in", ["get", "type"], ["literal", [TYPE.NO_GO, TYPE.OBSTACLE]]],
   paint: {
     "fill-color": [
       "match",
       ["get", "type"],
       TYPE.NO_GO, COLOR.noGo,
       TYPE.OBSTACLE, COLOR.obstacle,
-      TYPE.DOCK_APPROACH, COLOR.dockApproach,
-      TYPE.DOCK_STATION, COLOR.dockStation,
       "#888888",
     ],
     "fill-opacity": 0.3,
@@ -87,19 +85,45 @@ const otherPolyFill: LayerProps = {
 const otherPolyOutline: LayerProps = {
   id: "poly-outline",
   type: "line",
-  filter: ["in", ["get", "type"], ["literal", [TYPE.NO_GO, TYPE.DOCK_APPROACH, TYPE.DOCK_STATION, TYPE.OBSTACLE]]],
+  filter: ["in", ["get", "type"], ["literal", [TYPE.NO_GO, TYPE.OBSTACLE]]],
   paint: {
     "line-color": [
       "match",
       ["get", "type"],
       TYPE.NO_GO, COLOR.noGo,
       TYPE.OBSTACLE, COLOR.obstacle,
-      TYPE.DOCK_APPROACH, COLOR.dockApproach,
-      TYPE.DOCK_STATION, COLOR.dockStation,
       "#888888",
     ],
     "line-width": 1.5,
   },
+};
+
+const dockApproachFill: LayerProps = {
+  id: "dock-approach-fill",
+  type: "fill",
+  filter: ["==", ["get", "type"], TYPE.DOCK_APPROACH],
+  paint: { "fill-color": COLOR.dockStation, "fill-opacity": 0.1 },
+};
+
+const dockApproachOutline: LayerProps = {
+  id: "dock-approach-outline",
+  type: "line",
+  filter: ["==", ["get", "type"], TYPE.DOCK_APPROACH],
+  paint: { "line-color": COLOR.dockStation, "line-width": 1.5, "line-dasharray": [4, 3] },
+};
+
+const dockStationFill: LayerProps = {
+  id: "dock-station-fill",
+  type: "fill",
+  filter: ["==", ["get", "type"], TYPE.DOCK_STATION],
+  paint: { "fill-color": COLOR.dockStation, "fill-opacity": 0.3 },
+};
+
+const dockStationOutline: LayerProps = {
+  id: "dock-station-outline",
+  type: "line",
+  filter: ["==", ["get", "type"], TYPE.DOCK_STATION],
+  paint: { "line-color": COLOR.dockStation, "line-width": 1.5 },
 };
 
 const channelLine: LayerProps = {
@@ -112,7 +136,7 @@ const channelLine: LayerProps = {
 const pointCircles: LayerProps = {
   id: "points",
   type: "circle",
-  filter: ["in", ["get", "type"], ["literal", [TYPE.CHARGE_POINT, TYPE.UNDOCK_POINT, TYPE.NRTK_REF]]],
+  filter: ["in", ["get", "type"], ["literal", [TYPE.UNDOCK_POINT, TYPE.NRTK_REF]]],
   paint: {
     "circle-radius": 6,
     "circle-stroke-width": 2,
@@ -120,7 +144,6 @@ const pointCircles: LayerProps = {
     "circle-color": [
       "match",
       ["get", "type"],
-      TYPE.CHARGE_POINT, COLOR.charge,
       TYPE.UNDOCK_POINT, COLOR.undock,
       TYPE.NRTK_REF, COLOR.nrtk,
       "#ffffff",
@@ -128,7 +151,7 @@ const pointCircles: LayerProps = {
   },
 };
 
-const INTERACTIVE_LAYERS = ["mowing-fill", "poly-fill", "channel-line", "points"];
+const INTERACTIVE_LAYERS = ["mowing-fill", "poly-fill", "dock-approach-fill", "dock-station-fill", "channel-line", "points"];
 
 const LEGEND: { className: string; label: string }[] = [
   { className: "map-swatch--mowing", label: "Mowing" },
@@ -217,9 +240,11 @@ function computeBounds(geojson: unknown): [[number, number], [number, number]] |
 export function MapView({
   geojsonTask,
   position,
+  heading,
 }: {
   geojsonTask: unknown;
   position: NavSatFixData | null;
+  heading: number | null;
 }) {
   const mapRef = useRef<MapRef | null>(null);
   const frameRef = useRef<HTMLDivElement | null>(null);
@@ -233,6 +258,40 @@ export function MapView({
   // If the robot position arrives before any geojson, we provisionally center
   // on it — but only once, and without blocking a later yard fit.
   const didRobotJumpRef = useRef(false);
+  const [zoom, setZoom] = useState(1);
+
+  const dockInfo = useMemo(() => {
+    const fc = geojsonTask as GeoJSON.FeatureCollection | null;
+    if (!fc?.features) return null;
+    let charge: { lng: number; lat: number } | null = null;
+    let undock: { lng: number; lat: number } | null = null;
+    for (const f of fc.features) {
+      const t = Number(f.properties?.type);
+      if (t === TYPE.CHARGE_POINT && f.geometry?.type === "Point") {
+        const [lng, lat] = (f.geometry as GeoJSON.Point).coordinates;
+        charge = { lng, lat };
+      } else if (t === TYPE.UNDOCK_POINT && f.geometry?.type === "Point") {
+        const [lng, lat] = (f.geometry as GeoJSON.Point).coordinates;
+        undock = { lng, lat };
+      }
+    }
+    if (!charge) return null;
+    let rotation = 0;
+    if (undock) {
+      const dLng = ((undock.lng - charge.lng) * Math.PI) / 180;
+      const lat1 = (charge.lat * Math.PI) / 180;
+      const lat2 = (undock.lat * Math.PI) / 180;
+      rotation =
+        (Math.atan2(Math.sin(dLng) * Math.cos(lat2), Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng)) * 180) /
+        Math.PI;
+    }
+    return { charge, rotation };
+  }, [geojsonTask]);
+
+  const markerScale = useMemo(() => {
+    const base = 18;
+    return Math.max(0.4, Math.min(2.0, Math.pow(2, (zoom - base) * 0.5)));
+  }, [zoom]);
 
   const fitToYard = useCallback((animate: boolean) => {
     const map = mapRef.current;
@@ -318,6 +377,7 @@ export function MapView({
         style={{ width: "100%", height: "100%" }}
         interactiveLayerIds={INTERACTIVE_LAYERS}
         onLoad={() => setLoaded(true)}
+        onZoom={(e) => setZoom(e.viewState.zoom)}
         onClick={(e) => showFromEvent(e, "click")}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
@@ -331,15 +391,45 @@ export function MapView({
             <Layer {...mowingOutline} />
             <Layer {...otherPolyFill} />
             <Layer {...otherPolyOutline} />
+            <Layer {...dockApproachFill} />
+            <Layer {...dockApproachOutline} />
+            <Layer {...dockStationFill} />
+            <Layer {...dockStationOutline} />
             <Layer {...channelLine} />
             <Layer {...pointCircles} />
           </Source>
         ) : null}
 
+        {dockInfo ? (
+          <Marker longitude={dockInfo.charge.lng} latitude={dockInfo.charge.lat} anchor="center">
+            <img
+              className="map-marker-img"
+              src="/base_station.png"
+              alt="Charging station"
+              draggable={false}
+              style={{
+                width: `${28 * markerScale}px`,
+                height: `${28 * markerScale}px`,
+                transform: `rotate(${dockInfo.rotation - 90}deg)`,
+              }}
+              onMouseEnter={() => setPopover({ lng: dockInfo.charge.lng, lat: dockInfo.charge.lat, label: "Charging station", detail: "", source: "click" })}
+              onMouseLeave={() => setPopover((prev) => (prev?.label === "Charging station" ? null : prev))}
+            />
+          </Marker>
+        ) : null}
+
         {position ? (
           <Marker longitude={position.lon} latitude={position.lat} anchor="center">
-            <span
-              className="map-robot"
+            <img
+              className="map-marker-img map-robot-img"
+              src="/tron_top.png"
+              alt="Robot"
+              draggable={false}
+              style={{
+                width: `${48 * markerScale}px`,
+                height: `${48 * markerScale}px`,
+                transform: heading != null ? `rotate(${(dockInfo?.rotation ?? 90) - 6 - heading * (180 / Math.PI)}deg)` : undefined,
+              }}
               onMouseEnter={() => setPopover(robotPopover(position))}
               onMouseLeave={() => setPopover((prev) => (prev?.label === "Robot" ? null : prev))}
               onClick={(e) => {
@@ -374,7 +464,10 @@ export function MapView({
           </span>
         ))}
         <span className="map-legend-item">
-          <span className="map-legend-dot" /> Robot
+          <img src="/base_station.png" alt="" className="map-legend-icon" /> Station
+        </span>
+        <span className="map-legend-item">
+          <img src="/tron_top.png" alt="" className="map-legend-icon" /> Robot
         </span>
       </div>
 
@@ -396,6 +489,7 @@ export function MapView({
           {isFullscreen ? "Exit" : "Fullscreen"}
         </button>
       </div>
+
     </div>
   );
 }

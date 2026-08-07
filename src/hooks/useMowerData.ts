@@ -26,6 +26,7 @@ import {
   mapRosLog,
   mapStringJson,
   mapTask,
+  mapHeadingFused,
 } from "../lib/parsers";
 
 export interface MowerData {
@@ -44,6 +45,7 @@ export interface MowerData {
   geojsonTask: unknown | null;
   fix: NavSatFixData | null;
   fixFused: NavSatFixData | null;
+  heading: number | null;
 }
 
 export interface LogEntry {
@@ -77,6 +79,7 @@ export function useMowerData() {
     geojsonTask: null,
     fix: null,
     fixFused: null,
+    heading: null,
   });
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [rosLogs, setRosLogs] = useState<RosLogEntry[]>([]);
@@ -122,6 +125,11 @@ export function useMowerData() {
           case "/mower_base/battery_health": {
             const batteryHealth = mapBatteryHealth(msg);
             setData((d) => ({ ...d, batteryHealth }));
+            break;
+          }
+          case "/heading_fused": {
+            const heading = mapHeadingFused(msg);
+            setData((d) => ({ ...d, heading }));
             break;
           }
           case "/mower_base/status": {
