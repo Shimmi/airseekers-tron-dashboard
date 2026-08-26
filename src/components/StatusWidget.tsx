@@ -76,7 +76,7 @@ function FilterIcon({ active }: { active: boolean }) {
   );
 }
 
-export function StatusWidget({ data, id }: { data: MowerStatusData | null; id?: string }) {
+export function StatusWidget({ data, rainSensorValue, id }: { data: MowerStatusData | null; rainSensorValue: number | null; id?: string }) {
   const [showAll, setShowAll] = useState(true);
   const activeCount = data
     ? Object.values(data.triggers).filter(Boolean).length
@@ -133,6 +133,29 @@ export function StatusWidget({ data, id }: { data: MowerStatusData | null; id?: 
           </div>
         )
       )}
+
+      {rainSensorValue != null && (() => {
+        const wetness = 1 - Math.min(rainSensorValue / 4095, 1);
+        const wet = wetness > 0.3;
+        return (
+          <div className="rain-sensor">
+            <div className="rain-sensor-header">
+              <span className="rain-sensor-label">Rain sensor</span>
+              <span className={`rain-sensor-status${wet ? " rain-sensor-status--wet" : ""}`}>
+                {wet ? "Wet" : "Dry"}
+              </span>
+            </div>
+            <div className="rain-sensor-bar-wrap">
+              <div className="rain-sensor-bar">
+                <div
+                  className={`rain-sensor-bar-fill${wet ? " rain-sensor-bar-fill--wet" : ""}`}
+                  style={{ width: `${wetness * 100}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </Card>
   );
 }

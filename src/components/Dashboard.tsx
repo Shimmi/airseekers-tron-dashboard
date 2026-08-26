@@ -76,7 +76,11 @@ export function Dashboard({
           nrtkNetMode={nrtkNetMode}
           id="widget-gps"
         />
-        <StatusWidget data={data.mowerStatus} id="widget-mower-status" />
+        <StatusWidget
+          data={data.mowerStatus}
+          rainSensorValue={data.sensorInfo?.rain_sensor_value != null ? Number(data.sensorInfo.rain_sensor_value) : null}
+          id="widget-mower-status"
+        />
         <TaskWidget data={data.task} geojsonTask={data.geojsonTask} />
         <MotorsWidget
           data={data.motors}

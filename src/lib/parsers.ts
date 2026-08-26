@@ -97,6 +97,9 @@ export interface LocalizationData {
   locState: number | null;
   fusionError: number | null;
   motionStatus: number | null;
+  headingInitialized: boolean | null;
+  errorCode: number | null;
+  remainingVisionBuffer: number | null;
 }
 
 export function mapLocalization(msg: Record<string, unknown>): LocalizationData {
@@ -122,7 +125,11 @@ export function mapLocalization(msg: Record<string, unknown>): LocalizationData 
     pose = { x: Number(position.x ?? 0), y: Number(position.y ?? 0), yaw };
   }
 
-  return { rtkStatus, refStation, satellites, loraRssi, pose, locState, fusionError, motionStatus };
+  const headingInitialized = msg.heading_initialized != null ? Boolean(msg.heading_initialized) : null;
+  const errorCode = msg.error_code != null ? Number(msg.error_code) : null;
+  const remainingVisionBuffer = msg.remaining_vision_buffer != null ? Number(msg.remaining_vision_buffer) : null;
+
+  return { rtkStatus, refStation, satellites, loraRssi, pose, locState, fusionError, motionStatus, headingInitialized, errorCode, remainingVisionBuffer };
 }
 
 export interface OccupancyGridData {

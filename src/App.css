@@ -1359,6 +1359,61 @@
   background: var(--red);
 }
 
+.rain-sensor {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.rain-sensor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.rain-sensor-label {
+  font-size: 11px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.rain-sensor-status {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--green);
+}
+
+.rain-sensor-status--wet {
+  color: var(--blue, #5b9cf5);
+}
+
+.rain-sensor-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.rain-sensor-bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.rain-sensor-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--green);
+  transition: width 0.4s ease, background 0.3s;
+}
+
+.rain-sensor-bar-fill--wet {
+  background: var(--blue, #5b9cf5);
+}
+
 .triggers-clear {
   font-size: 13px;
   color: var(--text3);

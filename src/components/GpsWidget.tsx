@@ -1,5 +1,5 @@
 import type { GpsInfoData, LocalizationData, RefInfoData } from "../lib/parsers";
-import { colorForValue, getFusionError, getLocState, getMotionStatus, getPrecision, rssiColor, type Health } from "../lib/status";
+import { colorForValue, getFusionError, getLocError, getLocState, getMotionStatus, getPrecision, rssiColor, type Health } from "../lib/status";
 import { Badge, Card } from "./Card";
 
 export function GpsWidget({
@@ -131,6 +131,34 @@ export function GpsWidget({
             hint="Camera/SLAM localization · separate from RTK"
             value={locState.label}
             color={locState.health}
+          />
+        )}
+        {localization?.headingInitialized === false && (
+          <GpsMetric
+            label="Heading"
+            hint="Compass heading trustworthiness"
+            value="Not initialized"
+            color="red"
+          />
+        )}
+        {localization?.errorCode != null && localization.errorCode > 0 && (() => {
+          const err = getLocError(localization.errorCode);
+          return (
+            <GpsMetric
+              label="Loc Error"
+              hint="Localization subsystem error"
+              value={err.label}
+              color={err.health}
+            />
+          );
+        })()}
+        {localization?.remainingVisionBuffer != null && localization.remainingVisionBuffer < 50 && (
+          <GpsMetric
+            label="Vision Buffer"
+            hint="VIO-only range remaining if RTK is lost (max 50 m)"
+            value={Math.round(localization.remainingVisionBuffer)}
+            unit=" m"
+            color={localization.remainingVisionBuffer >= 30 ? "green" : localization.remainingVisionBuffer >= 15 ? "yellow" : "red"}
           />
         )}
         {localization?.motionStatus != null && localization.motionStatus > 0 && (

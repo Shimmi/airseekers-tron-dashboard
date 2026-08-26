@@ -80,6 +80,21 @@ export function getMotionStatus(status: number | null): string {
   return MOTION_STATUS_LABELS[status] ?? `Unknown (${status})`;
 }
 
+const LOC_ERROR_LABELS: Record<number, [string, Health]> = {
+  0: ["None", "green"],
+  1: ["Position init failed", "red"],
+  2: ["Heading init failed", "red"],
+  3: ["RTK alignment failed", "red"],
+  4: ["RTK + Vision lost", "red"],
+};
+
+export function getLocError(code: number | null): { label: string; health: Health } {
+  if (code == null) return { label: "--", health: "gray" };
+  const entry = LOC_ERROR_LABELS[code];
+  if (entry) return { label: entry[0], health: entry[1] };
+  return { label: `Error (${code})`, health: "red" };
+}
+
 export function getPrecision(status: string): PrecisionLevel {
   if (status.includes("NARROW_INT"))
     return { label: "Centimeter", short: "Fixed", detail: "Carrier-phase ambiguities resolved — may toggle near threshold", variant: "green" };
