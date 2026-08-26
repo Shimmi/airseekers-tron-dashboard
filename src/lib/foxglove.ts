@@ -30,6 +30,7 @@ export class FoxgloveClient {
   #channels: Record<string, Channel> = {};
   #serviceMap: Record<string, Service> = {};
   #serviceWriters: Record<string, MessageWriter> = {};
+  #serviceReaders: Record<string, MessageReader> = {};
   #subscriptions: Record<number, { topic: string; channelId: number }> = {};
   #subscribedTopics = new Set<string>();
   #readers: Record<number, MessageReader> = {};
@@ -179,13 +180,22 @@ export class FoxgloveClient {
     protocol.on("advertiseServices", (services: Service[]) => {
       for (const svc of services) {
         this.#serviceMap[svc.name] = svc;
-        const schema = (svc as Record<string, unknown>).requestSchema as string | undefined;
-        if (schema) {
+        const reqSchema = (svc as Record<string, unknown>).requestSchema as string | undefined;
+        if (reqSchema) {
           try {
-            const defs = parseMessageDefinition(schema);
+            const defs = parseMessageDefinition(reqSchema);
             this.#serviceWriters[svc.name] = new MessageWriter(defs);
           } catch {
             /* no writer — will fall back to JSON */
+          }
+        }
+        const resSchema = (svc as Record<string, unknown>).responseSchema as string | undefined;
+        if (resSchema) {
+          try {
+            const defs = parseMessageDefinition(resSchema);
+            this.#serviceReaders[svc.name] = new MessageReader(defs);
+          } catch {
+            /* no reader — will show raw bytes */
           }
         }
       }
@@ -201,19 +211,28 @@ export class FoxgloveClient {
     });
 
     protocol.on("serviceCallResponse", (resp: ServiceCallResponse) => {
-      let detail = "";
-      if (resp.data.byteLength > 0) {
-        try {
-          const text = new TextDecoder().decode(resp.data);
-          detail = " → " + text;
-        } catch {
-          /* ignore */
-        }
-      }
       const svcName =
         Object.entries(this.#serviceMap).find(
           ([, s]) => s.id === resp.serviceId,
         )?.[0] ?? `service#${resp.serviceId}`;
+      let detail = "";
+      if (resp.data.byteLength > 0) {
+        const reader = this.#serviceReaders[svcName];
+        if (reader) {
+          try {
+            const decoded = reader.readMessage(resp.data);
+            detail = " → " + JSON.stringify(decoded);
+          } catch {
+            detail = " → (decode error, " + resp.data.byteLength + " bytes)";
+          }
+        } else {
+          try {
+            detail = " → " + new TextDecoder().decode(resp.data);
+          } catch {
+            /* ignore */
+          }
+        }
+      }
       this.#callbacks.onLog(
         `Service response ${svcName} (id=${resp.callId}): ok${detail}`,
         "ok",
@@ -327,6 +346,7 @@ export class FoxgloveClient {
     this.#channels = {};
     this.#serviceMap = {};
     this.#serviceWriters = {};
+    this.#serviceReaders = {};
     this.#subscriptions = {};
     this.#subscribedTopics.clear();
     this.#readers = {};
