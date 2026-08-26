@@ -28,6 +28,8 @@ export function DeviceWidget({
   const cutter = str(sensorInfo?.cutter_board_version);
   const ip = str(network?.wifi_ip);
   const locked = config?.DeviceLock === "1";
+  const cutterSizeRaw = sensorInfo?.cutter_size != null ? Number(sensorInfo.cutter_size) : null;
+  const cutterSize = cutterSizeRaw === 1 ? "Small" : cutterSizeRaw === 2 ? "Big" : null;
 
   return (
     <Card title="Device" hideTitle className="device-card card--wide">
@@ -52,6 +54,7 @@ export function DeviceWidget({
           <DeviceRow label="RTK" value={gpsInfo?.version} hint="GPS positioning module" />
           <DeviceRow label="RTK Hardware" value={gpsInfo?.hardwareVersion ? `v${gpsInfo.hardwareVersion}` : undefined} />
           <DeviceRow label="LoRa" value={gpsInfo?.loraVersion} hint="Base station radio link" />
+          {cutterSize && <DeviceRow label="Cutter Disk" value={cutterSize} hint="Installed blade disk size" />}
         </div>
       </details>
     </Card>

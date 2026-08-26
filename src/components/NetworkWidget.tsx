@@ -31,6 +31,18 @@ export function NetworkWidget({
         label="SIM Active"
         value={data ? (data.sim_active ? "Yes" : "No") : "--"}
       />
+      <MetricRow
+        label="Cloud"
+        value={
+          data?.connected != null ? (
+            <span style={{ color: healthVar(data.connected ? "green" : "red") }}>
+              {data.connected ? "Connected" : "Offline"}
+            </span>
+          ) : (
+            "--"
+          )
+        }
+      />
     </Card>
   );
 }

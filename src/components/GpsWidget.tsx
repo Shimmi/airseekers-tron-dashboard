@@ -1,5 +1,5 @@
 import type { GpsInfoData, LocalizationData, RefInfoData } from "../lib/parsers";
-import { colorForValue, getFusionError, getLocState, getPrecision, rssiColor, type Health } from "../lib/status";
+import { colorForValue, getFusionError, getLocState, getMotionStatus, getPrecision, rssiColor, type Health } from "../lib/status";
 import { Badge, Card } from "./Card";
 
 export function GpsWidget({
@@ -131,6 +131,14 @@ export function GpsWidget({
             hint="Camera/SLAM localization · separate from RTK"
             value={locState.label}
             color={locState.health}
+          />
+        )}
+        {localization?.motionStatus != null && localization.motionStatus > 0 && (
+          <GpsMetric
+            label="Motion"
+            hint="Drive traction · slip = wheels losing grip"
+            value={getMotionStatus(localization.motionStatus)}
+            color={localization.motionStatus >= 2 ? "red" : "yellow"}
           />
         )}
       </div>
