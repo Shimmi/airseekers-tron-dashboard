@@ -7,6 +7,7 @@ import { ControlWidget } from "./EmergencyWidget";
 import { GpsWidget } from "./GpsWidget";
 import { LogWidget } from "./LogWidget";
 import { MapWidget } from "./MapWidget";
+import { MotorsWidget } from "./MotorsWidget";
 import { NetworkWidget } from "./NetworkWidget";
 import { RosLogWidget } from "./RosLogWidget";
 import { StatusStripWidget } from "./StatusStripWidget";
@@ -77,6 +78,11 @@ export function Dashboard({
         />
         <StatusWidget data={data.mowerStatus} id="widget-mower-status" />
         <TaskWidget data={data.task} geojsonTask={data.geojsonTask} />
+        <MotorsWidget
+          data={data.motors}
+          cutterHeight={data.task?.params[0]?.cutterHeight ?? null}
+          id="widget-motors"
+        />
         <NetworkWidget data={data.network} id="widget-network" />
         <ControlWidget
           stopAvailable={services.includes("/controller/ctrl")}

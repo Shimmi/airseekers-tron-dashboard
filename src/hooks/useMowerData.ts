@@ -6,6 +6,7 @@ import {
   type BatteryHealthData,
   type GpsInfoData,
   type LocalizationData,
+  type MotorsData,
   type MowerStatusData,
   type NavSatFixData,
   type OccupancyGridData,
@@ -18,6 +19,7 @@ import {
   mapGeoJsonTask,
   mapGpsInfo,
   mapLocalization,
+  mapMotors,
   mapMowerStatus,
   mapNavSatFix,
   mapOccupancyGrid,
@@ -43,6 +45,7 @@ export interface MowerData {
   boundary: PolygonData | null;
   refInfo: RefInfoData | null;
   geojsonTask: unknown | null;
+  motors: MotorsData | null;
   fix: NavSatFixData | null;
   fixFused: NavSatFixData | null;
   heading: number | null;
@@ -77,6 +80,7 @@ export function useMowerData() {
     boundary: null,
     refInfo: null,
     geojsonTask: null,
+    motors: null,
     fix: null,
     fixFused: null,
     heading: null,
@@ -125,6 +129,11 @@ export function useMowerData() {
           case "/mower_base/battery_health": {
             const batteryHealth = mapBatteryHealth(msg);
             setData((d) => ({ ...d, batteryHealth }));
+            break;
+          }
+          case "/mower_base/motor_info": {
+            const motors = mapMotors(msg);
+            setData((d) => ({ ...d, motors }));
             break;
           }
           case "/heading_fused": {

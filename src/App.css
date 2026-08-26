@@ -1008,6 +1008,263 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* ── Motors Widget ── */
+
+.motors-empty {
+  color: var(--text3);
+  font-size: 13px;
+  padding: 8px 0;
+}
+
+/* Blade hero — circular gauge + metrics */
+.motor-blade-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.motor-blade-gauge {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
+}
+
+.motor-blade-ring {
+  width: 100%;
+  height: 100%;
+}
+
+.motor-blade-gauge-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.motor-blade-rpm {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.motor-blade-rpm-unit {
+  font-size: 9px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 2px;
+}
+
+.motor-blade-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.motor-blade-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.motor-blade-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.motor-blade-status {
+  font-size: 11px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.motor-blade-status--active {
+  color: var(--green);
+}
+
+.motor-blade-stats {
+  display: flex;
+  gap: 14px;
+}
+
+.motor-section-header {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text3);
+  margin-bottom: 6px;
+}
+
+/* Wheel cards — side by side */
+.motor-wheels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.motor-wheel-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--surface2);
+  transition: border-color 0.2s;
+}
+
+.motor-wheel-card--error {
+  border-color: var(--red);
+  background: color-mix(in srgb, var(--red) 6%, var(--surface2));
+}
+
+.motor-wheel-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.motor-wheel-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.motor-wheel-label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.motor-wheel-status {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.motor-wheel-status--active {
+  color: var(--green);
+}
+
+.motor-wheel-metrics {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.motor-wheel-metric {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+}
+
+.motor-wheel-metric-value {
+  font-size: 16px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.motor-wheel-metric-unit {
+  font-size: 10px;
+  color: var(--text3);
+}
+
+/* Temperature bar */
+.motor-temp-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.motor-temp-bar-track {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.motor-temp-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  min-width: 2px;
+}
+
+.motor-temp-bar-label {
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Deck motor card */
+.motor-deck-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--surface2);
+}
+
+.motor-deck-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.motor-deck-height {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.motor-deck-height-label {
+  font-size: 11px;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.motor-deck-height-value {
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.motor-deck-metrics {
+  display: flex;
+  gap: 14px;
+}
+
+/* Shared stat atoms */
+.motor-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+}
+
+.motor-stat-value {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.motor-stat-unit {
+  font-size: 10px;
+  color: var(--text3);
+}
+
 /* ── Status Widget ── */
 
 .status-header {

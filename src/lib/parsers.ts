@@ -354,6 +354,52 @@ export function mapGeoJsonTask(msg: Record<string, unknown>): unknown | null {
   }
 }
 
+// ── Motors ──
+
+const MOTOR_STATUS_LABELS: Record<number, string> = {
+  0: "Idle", 1: "Running", 2: "Locked", [-1]: "Error",
+  [-2]: "Overcurrent", [-3]: "Overvoltage", [-4]: "Undervoltage",
+  [-5]: "Overheat", [-6]: "Stall", [-7]: "Overload",
+};
+
+export interface MotorData {
+  rpm: number;
+  current: number;
+  voltage: number;
+  temperature: number;
+  status: string;
+  error: boolean;
+}
+
+export interface MotorsData {
+  cutter: MotorData;
+  left: MotorData;
+  right: MotorData;
+  height: MotorData;
+}
+
+function mapMotor(raw: Record<string, unknown> | undefined): MotorData {
+  const statusRaw = raw?.status as Record<string, unknown> | undefined;
+  const statusCode = Number(statusRaw?.status ?? 0);
+  return {
+    rpm: Number(raw?.speed_rpm ?? 0),
+    current: Number(raw?.current ?? 0) / 100,
+    voltage: Number(raw?.voltage ?? 0) / 100,
+    temperature: Number(raw?.temperature ?? 0),
+    status: MOTOR_STATUS_LABELS[statusCode] ?? `Unknown (${statusCode})`,
+    error: statusCode < 0,
+  };
+}
+
+export function mapMotors(msg: Record<string, unknown>): MotorsData {
+  return {
+    cutter: mapMotor(msg.cutter_motor as Record<string, unknown> | undefined),
+    left: mapMotor(msg.left_motor as Record<string, unknown> | undefined),
+    right: mapMotor(msg.right_motor as Record<string, unknown> | undefined),
+    height: mapMotor(msg.height_motor as Record<string, unknown> | undefined),
+  };
+}
+
 export function mapHeadingFused(msg: Record<string, unknown>): number | null {
   const v = msg.data;
   return typeof v === "number" && Number.isFinite(v) ? v : null;
