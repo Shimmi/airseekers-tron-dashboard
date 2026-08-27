@@ -150,6 +150,9 @@ export function useMowerData() {
           }
           case "/notice_code": {
             const notice = mapNotice(msg);
+            const nowSec = Date.now() / 1000;
+            const ts = Number(msg.timestamp ?? 0);
+            if (ts > 0 && nowSec - ts > 120) break;
             setNotices((prev) => {
               const next = [...prev, notice];
               return next.length > 100 ? next.slice(-100) : next;
@@ -284,7 +287,8 @@ export function useMowerData() {
             }
             break;
           }
-          case "/rosout": {
+          case "/rosout":
+          case "/rosout_agg": {
             const entry = mapRosLog(msg);
             if (entry.level === "debug") break;
             setRosLogs((prev) => {

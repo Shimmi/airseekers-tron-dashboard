@@ -35,6 +35,7 @@ export class FoxgloveClient {
   #subscribedTopics = new Set<string>();
   #readers: Record<number, MessageReader> = {};
   #nextCallId = 1;
+  #deserializeErrorLogged = new Set<string>();
   #reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   #connectTimer: ReturnType<typeof setTimeout> | null = null;
   #url = "";
@@ -277,6 +278,7 @@ export class FoxgloveClient {
       "/mower_base/dev_base_info",
       "/notice_code",
       "/heading_fused",
+      "/rosout_agg",
     ];
 
     for (const topic of targets) {
@@ -328,7 +330,13 @@ export class FoxgloveClient {
           parsed as Record<string, unknown>,
         );
       } catch (e) {
-        console.error(`Deserialize error for ${sub.topic}:`, e);
+        if (!this.#deserializeErrorLogged.has(sub.topic)) {
+          this.#deserializeErrorLogged.add(sub.topic);
+          this.#callbacks.onLog(
+            `Deserialize error for ${sub.topic}: ${e} (${raw.byteLength} bytes)`,
+            "error",
+          );
+        }
       }
     } else {
       try {
@@ -353,5 +361,6 @@ export class FoxgloveClient {
     this.#subscriptions = {};
     this.#subscribedTopics.clear();
     this.#readers = {};
+    this.#deserializeErrorLogged.clear();
   }
 }
