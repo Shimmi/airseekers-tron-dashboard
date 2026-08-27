@@ -31,9 +31,9 @@ function decodeRawDepth(msg: ImageMessage, canvas: HTMLCanvasElement): boolean {
 
   const bpp = data.byteLength / (width * height);
   if (bpp === 3 || bpp === 4 && encoding !== "32FC1") {
-    // rgb8/bgr8 — already colorized, render directly
     if (canvas.width !== width) canvas.width = width;
     if (canvas.height !== height) canvas.height = height;
+    canvas.style.aspectRatio = `${width} / ${height}`;
     const ctx = canvas.getContext("2d")!;
     const imageData = ctx.createImageData(width, height);
     const px = imageData.data;
@@ -60,6 +60,7 @@ function decodeRawDepth(msg: ImageMessage, canvas: HTMLCanvasElement): boolean {
 
   if (canvas.width !== width) canvas.width = width;
   if (canvas.height !== height) canvas.height = height;
+  canvas.style.aspectRatio = `${width} / ${height}`;
 
   const ctx = canvas.getContext("2d")!;
   const imageData = ctx.createImageData(width, height);
@@ -152,13 +153,14 @@ export function CameraFeedWidget({
         if (!canvas) { onDone(); return; }
         canvas.width = img.width;
         canvas.height = img.height;
+        canvas.style.aspectRatio = `${img.width} / ${img.height}`;
         const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
         ctx.drawImage(img, 0, 0);
         const imageData = ctx.getImageData(0, 0, img.width, img.height);
         const px = imageData.data;
         for (let i = 0; i < px.length; i += 4) {
           const gray = px[i];
-          if (gray === 0) continue;
+          if (gray < 24) continue;
           px[i] = DEPTH_LUT[gray * 3];
           px[i + 1] = DEPTH_LUT[gray * 3 + 1];
           px[i + 2] = DEPTH_LUT[gray * 3 + 2];
@@ -223,6 +225,7 @@ export function CameraFeedWidget({
               className={`cam-feed-color-btn${colorize ? " cam-feed-color-btn--active" : ""}`}
               onClick={onToggleColorize}
               title={colorize ? "Switch to grayscale" : "Switch to color"}
+              data-umami-event="cameras-colorize-toggle"
             >
               {colorize ? "Color" : "B&W"}
             </button>

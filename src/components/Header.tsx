@@ -49,12 +49,14 @@ export function Header({
             <button
               className={`header-nav-link${page === "dashboard" ? " header-nav-link--active" : ""}`}
               onClick={() => onNavigate("dashboard")}
+              data-umami-event="nav-dashboard"
             >
               Dashboard
             </button>
             <button
               className={`header-nav-link${page === "cameras" ? " header-nav-link--active" : ""}`}
               onClick={() => onNavigate("cameras")}
+              data-umami-event="nav-cameras"
             >
               Cameras
             </button>

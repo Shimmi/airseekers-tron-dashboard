@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import posthog from "posthog-js";
 import type { ServiceCallStatus } from "../hooks/useMowerData";
 import { CAMERAS } from "../lib/cameras";
 import type { ImageMessage } from "../lib/foxglove";
@@ -85,12 +86,14 @@ export function CamerasPage({
     setEnabledKeys((prev) => {
       const next = new Set(prev);
       const cam = CAMERAS.find((c) => c.key === key);
-      if (next.has(key)) {
+      const enabling = !next.has(key);
+      if (enabling) {
+        next.add(key);
+      } else {
         next.delete(key);
         if (cam?.serviceKey) onStopCamera(cam.serviceKey);
-      } else {
-        next.add(key);
       }
+      posthog.capture("camera_toggled", { camera: key, enabled: enabling });
       saveConfig({ enabled: [...next] });
       return next;
     });
@@ -141,6 +144,7 @@ export function CamerasPage({
                 className={`cameras-col-btn${columns === n ? " cameras-col-btn--active" : ""}`}
                 onClick={() => changeColumns(n)}
                 title={`${n} column${n > 1 ? "s" : ""}`}
+                data-umami-event={`cameras-grid-${n}`}
               >
                 {n}
               </button>
@@ -154,11 +158,12 @@ export function CamerasPage({
               className={`cameras-chip${enabledKeys.has(cam.key) ? " cameras-chip--active" : ""}`}
               onClick={() => toggleCamera(cam.key)}
               title={cam.description || cam.topic}
+              data-umami-event={`cameras-toggle-${cam.key}`}
             >
               {cam.label}
             </button>
           ))}
-          <button className="cameras-chip cameras-chip--toggle" onClick={toggleAll}>
+          <button className="cameras-chip cameras-chip--toggle" onClick={toggleAll} data-umami-event="cameras-toggle-all">
             {CAMERAS.every((c) => enabledKeys.has(c.key)) ? "Hide All" : "Show All"}
           </button>
         </div>
