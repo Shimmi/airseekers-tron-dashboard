@@ -407,6 +407,94 @@ export function mapMotors(msg: Record<string, unknown>): MotorsData {
   };
 }
 
+// ── Device Base Info ──
+
+export interface DevBaseInfoData {
+  bmsVersion: string | null;
+}
+
+export function mapDevBaseInfo(msg: Record<string, unknown>): DevBaseInfoData {
+  const bms = msg.bms_version;
+  return {
+    bmsVersion: typeof bms === "string" && bms ? bms : null,
+  };
+}
+
+// ── Notice / Event Log ──
+
+const NOTICE_LABELS: Record<number, string> = {
+  900001: "Task mode", 900002: "Mapping mode", 900003: "Standby",
+  900004: "Power on", 900005: "Power off", 900006: "Task started",
+  900007: "OTA started", 900008: "OTA complete", 900009: "BLE pairing",
+  900010: "Task paused", 900011: "Charging started", 900013: "Charge complete",
+  900015: "Fault", 900016: "Alarm", 900017: "E-Stop",
+  900018: "Lifted", 900019: "Blade off", 900020: "Blade on",
+  900023: "Shutdown soon", 900024: "Low battery → dock", 900025: "Return to dock failed",
+  900026: "Lawn obstacles", 900027: "Obstacle, can't route", 900028: "Undocking obstacle",
+  900030: "RTK no fix", 900031: "Returning to dock", 900032: "E-Stop cleared",
+  900033: "Body button pressed", 900034: "WiFi/BLE bind failed",
+  900036: "Task failed", 900039: "Blade start failed", 900040: "Can't continue task",
+  900041: "Locked (has map)", 900042: "Locked (no map)", 900049: "Stuck",
+  900051: "Dock failed (detect)", 900052: "Dock failed (timeout)", 900053: "Dock failed (max retries)",
+  900055: "Localization error", 900058: "Dock position changed", 900059: "Start outside boundary",
+  900061: "Scheduled mow started", 900062: "Task self-resumed", 900069: "OTA failed",
+  900070: "Human detected", 900086: "Stereo camera error", 900087: "Rear camera error",
+  900088: "Side camera error", 900089: "NRTK signal weak", 900090: "NRTK expired",
+  900091: "NRTK region unsupported", 900101: "Task stopped", 900102: "Task finished",
+  900103: "Pairing complete", 900104: "Finding", 900105: "Low battery",
+  900106: "Manual intervention", 900107: "Dangerous",
+  100003: "Bumper error", 100101: "Camera connection failed", 100103: "Camera malfunction",
+  100104: "VSLAM offline", 100105: "Camera blocked",
+  200001: "Charge path blocked", 200002: "Charging station error",
+  300001: "Outside geofence", 300002: "Left work zone",
+  400005: "Rain detected",
+  500001: "Battery too cold", 500002: "Battery too hot", 500006: "Battery defect",
+  500007: "Battery low voltage", 500009: "Battery overcurrent",
+  600004: "Height motor error", 600006: "Electronics error", 600010: "Drive error",
+  600011: "Wheel current abnormal", 600012: "E-Stop pressed",
+  600013: "Wheel undervoltage", 600014: "Wheel overvoltage", 600015: "Wheel overheat",
+  600016: "Blade undervoltage", 600017: "Blade overvoltage", 600018: "Blade overheat",
+  600019: "Blade stalled",
+  700003: "BLE error", 700005: "WiFi error",
+  800001: "GPS interference", 800002: "GPS module error", 800003: "GPS data error",
+  800004: "RTK base no signal",
+};
+
+const MODULE_LABELS: Record<number, string> = {
+  0: "Logic", 1: "Base", 2: "Loc", 3: "Perception", 4: "Controller",
+};
+
+export type NoticeLevel = "info" | "warn" | "error";
+
+export interface NoticeEntry {
+  code: number;
+  label: string;
+  module: string;
+  level: NoticeLevel;
+  time: string;
+}
+
+function noticeLevel(code: number): NoticeLevel {
+  if (code >= 100000 && code < 900000) return "error";
+  if (code === 900015 || code === 900016 || code === 900017 || code === 900036 ||
+      code === 900049 || code === 900055 || code === 900069 || code === 900107)
+    return "warn";
+  return "info";
+}
+
+export function mapNotice(msg: Record<string, unknown>): NoticeEntry {
+  const code = Number(msg.code ?? 0);
+  const moduleCode = Number(msg.module ?? 0);
+  const ts = Number(msg.timestamp ?? 0);
+  return {
+    code,
+    label: NOTICE_LABELS[code] ?? `Unknown (${code})`,
+    module: MODULE_LABELS[moduleCode] ?? `${moduleCode}`,
+    level: noticeLevel(code),
+    time: ts > 0 ? new Date(ts * 1000).toLocaleTimeString() : new Date().toLocaleTimeString(),
+  };
+}
+
 export function mapHeadingFused(msg: Record<string, unknown>): number | null {
   const v = msg.data;
   return typeof v === "number" && Number.isFinite(v) ? v : null;

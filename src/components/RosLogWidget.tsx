@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { RosLogEntry } from "../lib/parsers";
-import { Chevron } from "./Card";
+import { useLogPanel } from "../hooks/useLogPanel";
+import { Chevron, useTargeted } from "./Card";
 
 type LevelFilter = "all" | "warn" | "error";
 
@@ -33,15 +34,15 @@ const LEVEL_SEVERITY: Record<string, number> = {
 
 export function RosLogWidget({ logs, id }: { logs: RosLogEntry[]; id?: string }) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [expanded, setExpanded] = useState(false);
   const [pinned, setPinned] = useState(true);
   const [filter, setFilter] = useState<LevelFilter>("all");
   const unseenRef = useRef(0);
   const [unseen, setUnseen] = useState(0);
-  const hasBeenOpened = useRef(false);
   const collapsedBaseline = useRef(0);
+  const { ref: targetRef, targeted } = useTargeted(id);
+  const { height, expanded, toggleExpanded, fullscreen, toggleFullscreen, resizeProps } = useLogPanel(id ?? "roslog");
 
-  if (!hasBeenOpened.current) collapsedBaseline.current = logs.length;
+  if (!expanded) collapsedBaseline.current = logs.length;
 
   const collapsedUnseen = expanded ? 0 : logs.length - collapsedBaseline.current;
   const collapsedHasAlert =
@@ -49,12 +50,6 @@ export function RosLogWidget({ logs, id }: { logs: RosLogEntry[]; id?: string })
     logs
       .slice(collapsedBaseline.current)
       .some((e) => LEVEL_SEVERITY[e.level] >= LEVEL_SEVERITY.warn);
-
-  const toggleExpanded = useCallback(() => {
-    hasBeenOpened.current = true;
-    collapsedBaseline.current = logs.length;
-    setExpanded((prev) => !prev);
-  }, [logs.length]);
 
   const filtered = useMemo(() => {
     const minLevel = filter === "error" ? 3 : filter === "warn" ? 2 : 0;
@@ -104,7 +99,11 @@ export function RosLogWidget({ logs, id }: { logs: RosLogEntry[]; id?: string })
   };
 
   return (
-    <div className="card card--wide roslog-card" id={id}>
+    <div
+      ref={targetRef}
+      className={`card card--wide roslog-card${targeted ? " card--targeted" : ""}${fullscreen ? " log-fullscreen" : ""}`}
+      id={id}
+    >
       <div
         className={`expandable-header${expanded ? "" : " expandable-header--collapsed"}`}
         onClick={toggleExpanded}
@@ -126,27 +125,40 @@ export function RosLogWidget({ logs, id }: { logs: RosLogEntry[]; id?: string })
           )}
         </div>
         <div className="expandable-header-extra">
-          {expanded ? (
-            <div className="roslog-filters" onClick={(e) => e.stopPropagation()}>
-              {(["all", "warn", "error"] as const).map((level) => (
-                <button
-                  key={level}
-                  className={`roslog-pill${filter === level ? " roslog-pill--active" : ""}${level === "error" ? " roslog-pill--error" : level === "warn" ? " roslog-pill--warn" : ""}`}
-                  onClick={() => setFilter(level)}
-                >
-                  {level.toUpperCase()}
-                </button>
-              ))}
-            </div>
-          ) : (
-            <span className="expand-hint">more</span>
+          {expanded && (
+            <>
+              <div className="roslog-filters" onClick={(e) => e.stopPropagation()}>
+                {(["all", "warn", "error"] as const).map((level) => (
+                  <button
+                    key={level}
+                    className={`roslog-pill${filter === level ? " roslog-pill--active" : ""}${level === "error" ? " roslog-pill--error" : level === "warn" ? " roslog-pill--warn" : ""}`}
+                    onClick={() => setFilter(level)}
+                  >
+                    {level.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+              <button
+                className="log-fullscreen-btn"
+                onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }}
+                title={fullscreen ? "Exit fullscreen" : "Fullscreen"}
+              >
+                <FullscreenIcon active={fullscreen} />
+              </button>
+            </>
           )}
+          {!expanded && <span className="expand-hint">more</span>}
           <Chevron expanded={expanded} />
         </div>
       </div>
       {expanded && (
         <div className="roslog-wrap">
-          <div className="log-area roslog-area" ref={scrollRef} onScroll={handleScroll}>
+          <div
+            className="log-area roslog-area"
+            ref={scrollRef}
+            onScroll={handleScroll}
+            style={fullscreen ? undefined : { height }}
+          >
             {filtered.length === 0 && (
               <div className="log-line log-line--info">
                 {logs.length === 0
@@ -173,8 +185,27 @@ export function RosLogWidget({ logs, id }: { logs: RosLogEntry[]; id?: string })
               &#8595; Latest{unseen > 0 ? ` (${unseen})` : ""}
             </button>
           )}
+          {!fullscreen && <div className="log-resize-handle" {...resizeProps} />}
         </div>
       )}
     </div>
+  );
+}
+
+function FullscreenIcon({ active }: { active: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {active ? (
+        <>
+          <path d="M4 14h6v6" /><path d="M14 10h6V4" />
+          <path d="M20 4l-6 6" /><path d="M4 20l6-6" />
+        </>
+      ) : (
+        <>
+          <path d="M15 3h6v6" /><path d="M9 21H3v-6" />
+          <path d="M21 3l-7 7" /><path d="M3 21l7-7" />
+        </>
+      )}
+    </svg>
   );
 }

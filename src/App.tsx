@@ -12,6 +12,7 @@ export function App() {
     data,
     logs,
     rosLogs,
+    notices,
     services,
     stopStatus,
     clearEstopStatus,
@@ -42,6 +43,7 @@ export function App() {
           data={data}
           logs={logs}
           rosLogs={rosLogs}
+          notices={notices}
           services={services}
           stopStatus={stopStatus}
           clearEstopStatus={clearEstopStatus}

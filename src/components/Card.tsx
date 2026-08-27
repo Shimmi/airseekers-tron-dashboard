@@ -19,21 +19,9 @@ function ensureGlobalClickListener() {
   });
 }
 
-export function Card({
-  title,
-  children,
-  className = "",
-  id,
-  hideTitle = false,
-}: {
-  title: string;
-  children: ReactNode;
-  className?: string;
-  id?: string;
-  hideTitle?: boolean;
-}) {
+export function useTargeted(id: string | undefined) {
   const [targeted, setTargeted] = useState(() => !!id && location.hash === `#${id}`);
-  const cardRef = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDivElement>(null);
   const lastSeq = useRef(glowSeq);
 
   useEffect(() => {
@@ -42,9 +30,9 @@ export function Card({
     const check = () => {
       const match = location.hash === `#${id}`;
       setTargeted(match);
-      if (match && cardRef.current && glowSeq !== lastSeq.current) {
+      if (match && ref.current && glowSeq !== lastSeq.current) {
         lastSeq.current = glowSeq;
-        const el = cardRef.current;
+        const el = ref.current;
         el.classList.remove("card--targeted");
         void el.offsetWidth;
         el.classList.add("card--targeted");
@@ -58,6 +46,24 @@ export function Card({
     if (!id) return;
     updateHash(`#${id}`);
   }, [id]);
+
+  return { ref, targeted, handleClick };
+}
+
+export function Card({
+  title,
+  children,
+  className = "",
+  id,
+  hideTitle = false,
+}: {
+  title: string;
+  children: ReactNode;
+  className?: string;
+  id?: string;
+  hideTitle?: boolean;
+}) {
+  const { ref: cardRef, targeted, handleClick } = useTargeted(id);
 
   return (
     <div

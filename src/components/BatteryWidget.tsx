@@ -35,16 +35,18 @@ function currentLabel(status: BatteryData["status"]): { label: string; arrow: st
 export function BatteryWidget({
   data,
   batteryHealth,
+  sensorBatteryTemp,
   id,
 }: {
   data: BatteryData | null;
   batteryHealth: BatteryHealthData | null;
+  sensorBatteryTemp: number | null;
   id?: string;
 }) {
   const pct = data?.percentage ?? 0;
   const color = data ? healthVar(batteryColor(pct)) : "var(--text3)";
 
-  const temp = batteryHealth?.temperature ?? null;
+  const temp = batteryHealth?.temperature ?? sensorBatteryTemp;
   const error = batteryHealth?.error ?? "0";
   const health = data?.health;
   const showHealthBadge = health && health !== "UNKNOWN" && health !== "GOOD";

@@ -274,6 +274,8 @@ export class FoxgloveClient {
       "/fix",
       "/mower_base/battery_health",
       "/mower_base/motor_info",
+      "/mower_base/dev_base_info",
+      "/notice_code",
       "/heading_fused",
     ];
 

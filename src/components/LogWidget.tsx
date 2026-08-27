@@ -1,32 +1,31 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import type { LogEntry } from "../hooks/useMowerData";
-import { Chevron } from "./Card";
+import { useLogPanel } from "../hooks/useLogPanel";
+import { Chevron, useTargeted } from "./Card";
 
 export function LogWidget({ logs, id }: { logs: LogEntry[]; id?: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [expanded, setExpanded] = useState(false);
-  const hasBeenOpened = useRef(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const collapsedBaseline = useRef(0);
+  const { ref: targetRef, targeted } = useTargeted(id);
+  const { height, expanded, toggleExpanded, fullscreen, toggleFullscreen, resizeProps } = useLogPanel(id ?? "log", 180);
 
-  if (!hasBeenOpened.current) collapsedBaseline.current = logs.length;
+  if (!expanded) collapsedBaseline.current = logs.length;
 
   const collapsedUnseen = expanded ? 0 : logs.length - collapsedBaseline.current;
   const collapsedHasAlert =
     !expanded &&
     logs.slice(collapsedBaseline.current).some((e) => e.level === "error");
 
-  const toggleExpanded = useCallback(() => {
-    hasBeenOpened.current = true;
-    collapsedBaseline.current = logs.length;
-    setExpanded((prev) => !prev);
-  }, [logs.length]);
-
   useEffect(() => {
-    if (expanded && ref.current) ref.current.scrollTop = ref.current.scrollHeight;
+    if (expanded && scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [logs, expanded]);
 
   return (
-    <div className="card card--wide" id={id}>
+    <div
+      ref={targetRef}
+      className={`card card--wide${targeted ? " card--targeted" : ""}${fullscreen ? " log-fullscreen" : ""}`}
+      id={id}
+    >
       <div
         className={`expandable-header${expanded ? "" : " expandable-header--collapsed"}`}
         onClick={toggleExpanded}
@@ -48,19 +47,53 @@ export function LogWidget({ logs, id }: { logs: LogEntry[]; id?: string }) {
           )}
         </div>
         <div className="expandable-header-extra">
+          {expanded && (
+            <button
+              className="log-fullscreen-btn"
+              onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }}
+              title={fullscreen ? "Exit fullscreen" : "Fullscreen"}
+            >
+              <FullscreenIcon active={fullscreen} />
+            </button>
+          )}
           {!expanded && <span className="expand-hint">more</span>}
           <Chevron expanded={expanded} />
         </div>
       </div>
       {expanded && (
-        <div className="log-area" ref={ref}>
-          {logs.map((entry, i) => (
-            <div key={i} className={`log-line log-line--${entry.level}`}>
-              [{entry.time}] {entry.msg}
-            </div>
-          ))}
+        <div className="log-wrap">
+          <div
+            className="log-area"
+            ref={scrollRef}
+            style={fullscreen ? undefined : { height }}
+          >
+            {logs.map((entry, i) => (
+              <div key={i} className={`log-line log-line--${entry.level}`}>
+                [{entry.time}] {entry.msg}
+              </div>
+            ))}
+          </div>
+          {!fullscreen && <div className="log-resize-handle" {...resizeProps} />}
         </div>
       )}
     </div>
+  );
+}
+
+function FullscreenIcon({ active }: { active: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {active ? (
+        <>
+          <path d="M4 14h6v6" /><path d="M14 10h6V4" />
+          <path d="M20 4l-6 6" /><path d="M4 20l6-6" />
+        </>
+      ) : (
+        <>
+          <path d="M15 3h6v6" /><path d="M9 21H3v-6" />
+          <path d="M21 3l-7 7" /><path d="M3 21l7-7" />
+        </>
+      )}
+    </svg>
   );
 }

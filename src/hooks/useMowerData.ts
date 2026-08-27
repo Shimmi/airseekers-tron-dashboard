@@ -4,11 +4,13 @@ import { type ConnectionState, FoxgloveClient } from "../lib/foxglove";
 import {
   type BatteryData,
   type BatteryHealthData,
+  type DevBaseInfoData,
   type GpsInfoData,
   type LocalizationData,
   type MotorsData,
   type MowerStatusData,
   type NavSatFixData,
+  type NoticeEntry,
   type OccupancyGridData,
   type PolygonData,
   type RefInfoData,
@@ -16,12 +18,14 @@ import {
   type TaskData,
   mapBattery,
   mapBatteryHealth,
+  mapDevBaseInfo,
   mapGeoJsonTask,
   mapGpsInfo,
   mapLocalization,
   mapMotors,
   mapMowerStatus,
   mapNavSatFix,
+  mapNotice,
   mapOccupancyGrid,
   mapPolygon,
   mapRefInfo,
@@ -46,6 +50,7 @@ export interface MowerData {
   refInfo: RefInfoData | null;
   geojsonTask: unknown | null;
   motors: MotorsData | null;
+  devBaseInfo: DevBaseInfoData | null;
   fix: NavSatFixData | null;
   fixFused: NavSatFixData | null;
   heading: number | null;
@@ -81,12 +86,14 @@ export function useMowerData() {
     refInfo: null,
     geojsonTask: null,
     motors: null,
+    devBaseInfo: null,
     fix: null,
     fixFused: null,
     heading: null,
   });
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [rosLogs, setRosLogs] = useState<RosLogEntry[]>([]);
+  const [notices, setNotices] = useState<NoticeEntry[]>([]);
   const [services, setServices] = useState<string[]>([]);
   const [stopStatus, setStopStatus] = useState<ServiceCallStatus>({ state: "idle" });
   const [clearEstopStatus, setClearEstopStatus] = useState<ServiceCallStatus>({ state: "idle" });
@@ -134,6 +141,19 @@ export function useMowerData() {
           case "/mower_base/motor_info": {
             const motors = mapMotors(msg);
             setData((d) => ({ ...d, motors }));
+            break;
+          }
+          case "/mower_base/dev_base_info": {
+            const devBaseInfo = mapDevBaseInfo(msg);
+            setData((d) => ({ ...d, devBaseInfo }));
+            break;
+          }
+          case "/notice_code": {
+            const notice = mapNotice(msg);
+            setNotices((prev) => {
+              const next = [...prev, notice];
+              return next.length > 100 ? next.slice(-100) : next;
+            });
             break;
           }
           case "/heading_fused": {
@@ -351,6 +371,7 @@ export function useMowerData() {
     data,
     logs,
     rosLogs,
+    notices,
     services,
     stopStatus,
     clearEstopStatus,

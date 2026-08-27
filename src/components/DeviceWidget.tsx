@@ -14,12 +14,14 @@ export function DeviceWidget({
   sensorInfo,
   config,
   network,
+  bmsVersion,
   debugText,
 }: {
   gpsInfo: GpsInfoData | null;
   sensorInfo: Record<string, unknown> | null;
   config: Record<string, unknown> | null;
   network: Record<string, unknown> | null;
+  bmsVersion: string | null;
   debugText: string;
 }) {
   const rawFw = str(sensorInfo?.mower_package_version);
@@ -53,6 +55,7 @@ export function DeviceWidget({
           <DeviceRow label="Cutter Deck" value={cutter} hint="Blade controller board" />
           <DeviceRow label="RTK" value={gpsInfo?.version} hint="GPS positioning module" />
           <DeviceRow label="RTK Hardware" value={gpsInfo?.hardwareVersion ? `v${gpsInfo.hardwareVersion}` : undefined} />
+          <DeviceRow label="BMS" value={bmsVersion ?? undefined} hint="Battery management system" />
           <DeviceRow label="LoRa" value={gpsInfo?.loraVersion} hint="Base station radio link" />
           {cutterSize && <DeviceRow label="Cutter Disk" value={cutterSize} hint="Installed blade disk size" />}
         </div>

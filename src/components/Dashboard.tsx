@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import type { ServiceCallStatus, MowerData, LogEntry } from "../hooks/useMowerData";
-import type { RosLogEntry } from "../lib/parsers";
+import type { NoticeEntry, RosLogEntry } from "../lib/parsers";
 import { BatteryWidget } from "./BatteryWidget";
 import { DeviceWidget } from "./DeviceWidget";
 import { ControlWidget } from "./EmergencyWidget";
@@ -9,6 +9,7 @@ import { LogWidget } from "./LogWidget";
 import { MapWidget } from "./MapWidget";
 import { MotorsWidget } from "./MotorsWidget";
 import { NetworkWidget } from "./NetworkWidget";
+import { NoticeLogWidget } from "./NoticeLogWidget";
 import { RosLogWidget } from "./RosLogWidget";
 import { StatusStripWidget } from "./StatusStripWidget";
 import { StatusWidget } from "./StatusWidget";
@@ -20,6 +21,7 @@ export function Dashboard({
   data,
   logs,
   rosLogs,
+  notices,
   services,
   stopStatus,
   clearEstopStatus,
@@ -29,6 +31,7 @@ export function Dashboard({
   data: MowerData;
   logs: LogEntry[];
   rosLogs: RosLogEntry[];
+  notices: NoticeEntry[];
   services: string[];
   stopStatus: ServiceCallStatus;
   clearEstopStatus: ServiceCallStatus;
@@ -58,6 +61,7 @@ export function Dashboard({
           sensorInfo={data.sensorInfo}
           config={data.config}
           network={data.network}
+          bmsVersion={data.devBaseInfo?.bmsVersion ?? null}
           debugText={debugText}
         />
         <StatusStripWidget
@@ -67,7 +71,12 @@ export function Dashboard({
           mowerStatus={data.mowerStatus}
           nrtkEnabled={nrtkEnabled}
         />
-        <BatteryWidget data={data.battery} batteryHealth={data.batteryHealth} id="widget-battery" />
+        <BatteryWidget
+          data={data.battery}
+          batteryHealth={data.batteryHealth}
+          sensorBatteryTemp={data.sensorInfo?.battery_temperature != null ? Number(data.sensorInfo.battery_temperature) : null}
+          id="widget-battery"
+        />
         <GpsWidget
           localization={data.localization}
           gpsInfo={data.gpsInfo}
@@ -103,6 +112,7 @@ export function Dashboard({
           heading={data.heading ?? data.localization?.pose?.yaw ?? null}
           id="widget-map"
         />
+        <NoticeLogWidget notices={notices} id="widget-notices" />
         <RosLogWidget logs={rosLogs} id="widget-roslog" />
         <LogWidget logs={logs} id="widget-log" />
       </div>
