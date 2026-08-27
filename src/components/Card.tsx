@@ -13,7 +13,7 @@ function ensureGlobalClickListener() {
   if (globalListenerActive) return;
   globalListenerActive = true;
   document.addEventListener("click", (e) => {
-    if (!location.hash) return;
+    if (!location.hash.startsWith("#widget-")) return;
     if ((e.target as Element).closest?.(".card")) return;
     updateHash("");
   });

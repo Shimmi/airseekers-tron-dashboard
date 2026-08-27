@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import posthog from "posthog-js";
-import { type ConnectionState, FoxgloveClient } from "../lib/foxglove";
+import { type ConnectionState, type ImageMessage, FoxgloveClient } from "../lib/foxglove";
 import {
   type BatteryData,
   type BatteryHealthData,
@@ -97,10 +97,13 @@ export function useMowerData() {
   const [services, setServices] = useState<string[]>([]);
   const [stopStatus, setStopStatus] = useState<ServiceCallStatus>({ state: "idle" });
   const [clearEstopStatus, setClearEstopStatus] = useState<ServiceCallStatus>({ state: "idle" });
+  const [cameraStatus, setCameraStatus] = useState<Record<string, ServiceCallStatus>>({});
   const clientRef = useRef<FoxgloveClient | null>(null);
-  const pendingCallIds = useRef<Map<number, "stop" | "clearEstop">>(new Map());
+  const imageSubscribers = useRef<Map<string, (msg: ImageMessage) => void>>(new Map());
+  const pendingCallIds = useRef<Map<number, string>>(new Map());
   const stopResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clearEstopResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cameraResetTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   const addLog = useCallback(
     (msg: string, level: "info" | "ok" | "warn" | "error") => {
@@ -116,6 +119,11 @@ export function useMowerData() {
     },
     [],
   );
+
+  const onImage = useCallback((topic: string, msg: ImageMessage) => {
+    const handler = imageSubscribers.current.get(topic);
+    if (handler) handler(msg);
+  }, []);
 
   const mapLoggedRef = useRef(false);
   const boundaryLoggedRef = useRef<number | null>(null);
@@ -318,11 +326,20 @@ export function useMowerData() {
         setStopStatus(result);
         if (stopResetTimer.current) clearTimeout(stopResetTimer.current);
         stopResetTimer.current = setTimeout(() => setStopStatus({ state: "idle" }), 5000);
-      } else {
+      } else if (kind === "clearEstop") {
         posthog.capture("mower_estop_cleared_result", { success: ok });
         setClearEstopStatus(result);
         if (clearEstopResetTimer.current) clearTimeout(clearEstopResetTimer.current);
         clearEstopResetTimer.current = setTimeout(() => setClearEstopStatus({ state: "idle" }), 5000);
+      } else if (kind.startsWith("cam:")) {
+        const cam = kind.slice(4);
+        setCameraStatus((prev) => ({ ...prev, [cam]: result }));
+        const prev = cameraResetTimers.current.get(cam);
+        if (prev) clearTimeout(prev);
+        cameraResetTimers.current.set(
+          cam,
+          setTimeout(() => setCameraStatus((p) => ({ ...p, [cam]: { state: "idle" } })), 5000),
+        );
       }
     },
     [],
@@ -332,6 +349,7 @@ export function useMowerData() {
     const client = new FoxgloveClient({
       onStateChange: setConnectionState,
       onMessage: handleMessage,
+      onImage,
       onLog: addLog,
       onServicesAvailable: setServices,
       onServiceResult,
@@ -341,8 +359,9 @@ export function useMowerData() {
       client.disconnect();
       if (stopResetTimer.current) clearTimeout(stopResetTimer.current);
       if (clearEstopResetTimer.current) clearTimeout(clearEstopResetTimer.current);
+      for (const t of cameraResetTimers.current.values()) clearTimeout(t);
     };
-  }, [handleMessage, addLog, onServiceResult]);
+  }, [handleMessage, onImage, addLog, onServiceResult]);
 
   const connect = useCallback((url: string) => {
     clientRef.current?.connect(url);
@@ -370,6 +389,34 @@ export function useMowerData() {
     }
   }, []);
 
+  const startCamera = useCallback((name: string) => {
+    const callId = clientRef.current?.callService(`/${name}/start_capture`, {});
+    if (callId != null) {
+      pendingCallIds.current.set(callId, `cam:${name}`);
+      setCameraStatus((prev) => ({ ...prev, [name]: { state: "pending" } }));
+    }
+  }, []);
+
+  const setDynamicTopics = useCallback((topics: string[]) => {
+    clientRef.current?.setDynamicTopics(topics);
+  }, []);
+
+  const subscribeImage = useCallback((topic: string, handler: (msg: ImageMessage) => void) => {
+    imageSubscribers.current.set(topic, handler);
+  }, []);
+
+  const unsubscribeImage = useCallback((topic: string) => {
+    imageSubscribers.current.delete(topic);
+  }, []);
+
+  const stopCamera = useCallback((name: string) => {
+    const callId = clientRef.current?.callService(`/${name}/stop_capture`, {});
+    if (callId != null) {
+      pendingCallIds.current.set(callId, `cam:${name}`);
+      setCameraStatus((prev) => ({ ...prev, [name]: { state: "pending" } }));
+    }
+  }, []);
+
   return {
     connectionState,
     data,
@@ -379,9 +426,15 @@ export function useMowerData() {
     services,
     stopStatus,
     clearEstopStatus,
+    cameraStatus,
     connect,
     disconnect,
     stop,
     clearEstop,
+    startCamera,
+    stopCamera,
+    setDynamicTopics,
+    subscribeImage,
+    unsubscribeImage,
   };
 }

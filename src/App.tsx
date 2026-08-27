@@ -1,12 +1,15 @@
 import { useEffect, useRef } from "react";
 import { useMowerData } from "./hooks/useMowerData";
+import { usePage } from "./hooks/usePage";
 import { Header } from "./components/Header";
 import { ConnectScreen } from "./components/ConnectScreen";
 import { Dashboard } from "./components/Dashboard";
+import { CamerasPage } from "./components/CamerasPage";
 import { WS_URL_KEY } from "./lib/constants";
 import "./App.css";
 
 export function App() {
+  const { page, navigate } = usePage();
   const {
     connectionState,
     data,
@@ -16,10 +19,16 @@ export function App() {
     services,
     stopStatus,
     clearEstopStatus,
+    cameraStatus,
     connect,
     disconnect,
     stop,
     clearEstop,
+    startCamera,
+    stopCamera,
+    setDynamicTopics,
+    subscribeImage,
+    unsubscribeImage,
   } = useMowerData();
 
   const autoConnected = useRef(false);
@@ -37,19 +46,39 @@ export function App() {
 
   return (
     <>
-      <Header connectionState={connectionState} onDisconnect={disconnect} />
+      <Header
+        connectionState={connectionState}
+        onDisconnect={disconnect}
+        page={page}
+        onNavigate={navigate}
+      />
       {showDashboard ? (
-        <Dashboard
-          data={data}
-          logs={logs}
-          rosLogs={rosLogs}
-          notices={notices}
-          services={services}
-          stopStatus={stopStatus}
-          clearEstopStatus={clearEstopStatus}
-          onStop={stop}
-          onClearEstop={clearEstop}
-        />
+        page === "cameras" ? (
+          <CamerasPage
+            setDynamicTopics={setDynamicTopics}
+            subscribeImage={subscribeImage}
+            unsubscribeImage={unsubscribeImage}
+            services={services}
+            cameraStatus={cameraStatus}
+            onStartCamera={startCamera}
+            onStopCamera={stopCamera}
+          />
+        ) : (
+          <Dashboard
+            data={data}
+            logs={logs}
+            rosLogs={rosLogs}
+            notices={notices}
+            services={services}
+            stopStatus={stopStatus}
+            clearEstopStatus={clearEstopStatus}
+            cameraStatus={cameraStatus}
+            onStop={stop}
+            onClearEstop={clearEstop}
+            onStartCamera={startCamera}
+            onStopCamera={stopCamera}
+          />
+        )
       ) : (
         <ConnectScreen onConnect={connect} />
       )}

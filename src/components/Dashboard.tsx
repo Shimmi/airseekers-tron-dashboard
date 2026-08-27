@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import type { ServiceCallStatus, MowerData, LogEntry } from "../hooks/useMowerData";
 import type { NoticeEntry, RosLogEntry } from "../lib/parsers";
 import { BatteryWidget } from "./BatteryWidget";
+import { CameraControlsWidget } from "./CameraControlsWidget";
 import { DeviceWidget } from "./DeviceWidget";
 import { ControlWidget } from "./EmergencyWidget";
 import { GpsWidget } from "./GpsWidget";
@@ -25,8 +26,11 @@ export function Dashboard({
   services,
   stopStatus,
   clearEstopStatus,
+  cameraStatus,
   onStop,
   onClearEstop,
+  onStartCamera,
+  onStopCamera,
 }: {
   data: MowerData;
   logs: LogEntry[];
@@ -35,8 +39,11 @@ export function Dashboard({
   services: string[];
   stopStatus: ServiceCallStatus;
   clearEstopStatus: ServiceCallStatus;
+  cameraStatus: Record<string, ServiceCallStatus>;
   onStop: () => void;
   onClearEstop: () => void;
+  onStartCamera: (name: string) => void;
+  onStopCamera: (name: string) => void;
 }) {
   const nrtkEnabled =
     data.gpsInfo?.nrtkEnabled ??
@@ -105,6 +112,13 @@ export function Dashboard({
           onStop={onStop}
           onClearEstop={onClearEstop}
           id="widget-control"
+        />
+        <CameraControlsWidget
+          services={services}
+          cameraStatus={cameraStatus}
+          onStart={onStartCamera}
+          onStop={onStopCamera}
+          id="widget-cameras"
         />
         <MapWidget
           geojsonTask={data.geojsonTask}

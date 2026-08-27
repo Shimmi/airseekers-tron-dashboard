@@ -11,9 +11,19 @@ import {
 
 export type ConnectionState = "disconnected" | "connecting" | "connected";
 
+export interface ImageMessage {
+  data: Uint8Array;
+  width?: number;
+  height?: number;
+  encoding?: string;
+  is_bigendian?: number;
+  step?: number;
+}
+
 export interface FoxgloveCallbacks {
   onStateChange: (state: ConnectionState) => void;
   onMessage: (topic: string, data: Record<string, unknown>) => void;
+  onImage: (topic: string, msg: ImageMessage) => void;
   onLog: (msg: string, level: "info" | "ok" | "warn" | "error") => void;
   onServicesAvailable: (services: string[]) => void;
   onServiceResult: (
@@ -33,9 +43,12 @@ export class FoxgloveClient {
   #serviceReaders: Record<string, MessageReader> = {};
   #subscriptions: Record<number, { topic: string; channelId: number }> = {};
   #subscribedTopics = new Set<string>();
+  #subIdByTopic = new Map<string, number>();
   #readers: Record<number, MessageReader> = {};
   #nextCallId = 1;
   #deserializeErrorLogged = new Set<string>();
+  #desiredDynamicTopics = new Set<string>();
+  #imageTopics = new Set<string>();
   #reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   #connectTimer: ReturnType<typeof setTimeout> | null = null;
   #url = "";
@@ -99,6 +112,16 @@ export class FoxgloveClient {
 
   hasService(name: string) {
     return name in this.#serviceMap;
+  }
+
+  setDynamicTopics(topics: string[]) {
+    const next = new Set(topics);
+    for (const topic of this.#desiredDynamicTopics) {
+      if (!next.has(topic)) this.#unsubscribeTopic(topic);
+    }
+    this.#desiredDynamicTopics = next;
+    this.#imageTopics = new Set(next);
+    for (const topic of next) this.#subscribeTopic(topic);
   }
 
   #doConnect() {
@@ -254,6 +277,44 @@ export class FoxgloveClient {
     });
   }
 
+  #subscribeTopic(topic: string): boolean {
+    if (!this.#protocol) return false;
+    if (this.#subscribedTopics.has(topic)) return true;
+    const ch = this.#channels[topic];
+    if (!ch) return false;
+
+    let reader: MessageReader | null = null;
+    const isRos1Schema =
+      ch.schemaEncoding === "ros1msg" ||
+      (!ch.schemaEncoding && ch.encoding === "ros1");
+    if (ch.schema && isRos1Schema) {
+      try {
+        const defs = parseMessageDefinition(ch.schema);
+        reader = new MessageReader(defs);
+      } catch (e) {
+        this.#callbacks.onLog(`Schema parse failed for ${topic}: ${e}`, "warn");
+      }
+    }
+
+    const subId = this.#protocol.subscribe(ch.id);
+    this.#subscriptions[subId] = { topic, channelId: ch.id };
+    this.#subscribedTopics.add(topic);
+    this.#subIdByTopic.set(topic, subId);
+    if (reader) this.#readers[subId] = reader;
+    return true;
+  }
+
+  #unsubscribeTopic(topic: string) {
+    const subId = this.#subIdByTopic.get(topic);
+    if (subId == null || !this.#protocol) return;
+    this.#protocol.unsubscribe(subId);
+    delete this.#subscriptions[subId];
+    delete this.#readers[subId];
+    this.#subscribedTopics.delete(topic);
+    this.#subIdByTopic.delete(topic);
+    this.#imageTopics.delete(topic);
+  }
+
   #subscribeAll() {
     if (!this.#protocol) return;
 
@@ -267,7 +328,6 @@ export class FoxgloveClient {
       "/task_info",
       "/mower_base/net_status",
       "/mower_gps_node/ref_info",
-      "/rosout",
       "/map",
       "/cover/polygon",
       "/geojson_task",
@@ -281,34 +341,10 @@ export class FoxgloveClient {
       "/rosout_agg",
     ];
 
-    for (const topic of targets) {
-      if (this.#subscribedTopics.has(topic)) continue;
-      const ch = this.#channels[topic];
-      if (!ch) continue;
-
-      let reader: MessageReader | null = null;
-      const isRos1Schema =
-        ch.schemaEncoding === "ros1msg" ||
-        (!ch.schemaEncoding && ch.encoding === "ros1");
-      if (ch.schema && isRos1Schema) {
-        try {
-          const defs = parseMessageDefinition(ch.schema);
-          reader = new MessageReader(defs);
-        } catch (e) {
-          this.#callbacks.onLog(
-            `Schema parse failed for ${topic}: ${e}`,
-            "warn",
-          );
-        }
-      }
-
-      const subId = this.#protocol.subscribe(ch.id);
-      this.#subscriptions[subId] = { topic, channelId: ch.id };
-      this.#subscribedTopics.add(topic);
-      if (reader) this.#readers[subId] = reader;
-    }
+    for (const topic of targets) this.#subscribeTopic(topic);
+    for (const topic of this.#desiredDynamicTopics) this.#subscribeTopic(topic);
     this.#callbacks.onLog(
-      `Subscribed to ${Object.keys(this.#subscriptions).length} topics`,
+      `Subscribed to ${this.#subscribedTopics.size} topics`,
       "ok",
     );
   }
@@ -319,6 +355,27 @@ export class FoxgloveClient {
 
     const raw = msg.data;
     const reader = this.#readers[msg.subscriptionId];
+
+    if (this.#imageTopics.has(sub.topic)) {
+      if (!reader) return;
+      try {
+        const parsed = reader.readMessage(
+          new DataView(raw.buffer, raw.byteOffset, raw.byteLength),
+        ) as Record<string, unknown>;
+        if (parsed.data) {
+          this.#callbacks.onImage(sub.topic, parsed as unknown as ImageMessage);
+        }
+      } catch (e) {
+        if (!this.#deserializeErrorLogged.has(sub.topic)) {
+          this.#deserializeErrorLogged.add(sub.topic);
+          this.#callbacks.onLog(
+            `Image deserialize error for ${sub.topic}: ${e}`,
+            "error",
+          );
+        }
+      }
+      return;
+    }
 
     if (reader) {
       try {
@@ -360,6 +417,7 @@ export class FoxgloveClient {
     this.#serviceReaders = {};
     this.#subscriptions = {};
     this.#subscribedTopics.clear();
+    this.#subIdByTopic.clear();
     this.#readers = {};
     this.#deserializeErrorLogged.clear();
   }

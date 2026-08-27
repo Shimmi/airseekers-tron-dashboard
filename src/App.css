@@ -12,10 +12,44 @@
   z-index: 100;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 .header-title {
   font-size: 18px;
   font-weight: 700;
   letter-spacing: -0.3px;
+}
+
+.header-nav {
+  display: flex;
+  gap: 2px;
+}
+
+.header-nav-link {
+  padding: 5px 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text2);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.header-nav-link:hover {
+  background: var(--surface2);
+  color: var(--text);
+}
+
+.header-nav-link--active {
+  background: var(--surface2);
+  color: var(--accent);
+  font-weight: 600;
 }
 
 .header-right {
@@ -2177,4 +2211,300 @@
 .roslog-jump:hover {
   background: var(--surface2);
   border-color: var(--accent);
+}
+
+/* ── Camera Controls ── */
+
+.cam-ctrl-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cam-ctrl-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.cam-ctrl-row:last-child {
+  border-bottom: none;
+}
+
+.cam-ctrl-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.cam-ctrl-btns {
+  display: flex;
+  gap: 6px;
+}
+
+.cam-btn {
+  width: 36px;
+  height: 30px;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  background: var(--surface);
+  color: var(--text2);
+}
+
+.cam-btn:hover:not(:disabled) {
+  background: var(--surface2);
+}
+
+.cam-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.cam-btn--start {
+  border-color: color-mix(in srgb, var(--green) 40%, var(--border));
+  color: var(--green);
+}
+
+.cam-btn--start:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--green) 10%, var(--surface));
+}
+
+.cam-btn--ok {
+  background: color-mix(in srgb, var(--green) 15%, var(--surface));
+  border-color: var(--green);
+}
+
+.cam-btn--stop {
+  border-color: color-mix(in srgb, var(--red) 30%, var(--border));
+  color: var(--red);
+  font-size: 10px;
+}
+
+.cam-btn--stop:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--red) 10%, var(--surface));
+}
+
+/* ── Cameras Page ── */
+
+.cameras-page {
+  padding: 16px;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.cameras-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.cameras-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cameras-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.cameras-count {
+  font-size: 12px;
+  color: var(--text2);
+  background: var(--surface2);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.cameras-toolbar-right {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cameras-chip {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text2);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.cameras-chip:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.cameras-chip--active {
+  background: color-mix(in srgb, var(--accent) 15%, var(--surface));
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.cameras-chip--toggle {
+  font-weight: 600;
+}
+
+.cameras-empty {
+  text-align: center;
+  padding: 80px 20px;
+  color: var(--text2);
+  font-size: 14px;
+}
+
+.cameras-col-btns {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.cameras-col-btn {
+  width: 28px;
+  height: 26px;
+  border: none;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text2);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.cameras-col-btn:last-child {
+  border-right: none;
+}
+
+.cameras-col-btn:hover {
+  background: var(--surface2);
+}
+
+.cameras-col-btn--active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.cameras-grid-label {
+  font-size: 12px;
+  color: var(--text2);
+}
+
+.cameras-grid {
+  display: grid;
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .cameras-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .cameras-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── Camera Feed ── */
+
+.cam-feed {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.cam-feed-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.cam-feed-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.cam-feed-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cam-feed-fps {
+  font-size: 11px;
+  color: var(--text2);
+  background: var(--surface2);
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.cam-feed-color-btn {
+  font-size: 10px;
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.cam-feed-color-btn:hover {
+  border-color: var(--accent);
+}
+
+.cam-feed-color-btn--active {
+  background: color-mix(in srgb, var(--accent) 15%, var(--surface));
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.cam-feed-view {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+}
+
+.cam-feed-img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.cam-feed-img--hidden {
+  display: none;
+}
+
+.cam-feed-placeholder {
+  color: var(--text2);
+  font-size: 13px;
+  padding: 40px;
 }
