@@ -72,11 +72,8 @@ export function App() {
             services={services}
             stopStatus={stopStatus}
             clearEstopStatus={clearEstopStatus}
-            cameraStatus={cameraStatus}
             onStop={stop}
             onClearEstop={clearEstop}
-            onStartCamera={startCamera}
-            onStopCamera={stopCamera}
           />
         )
       ) : (
