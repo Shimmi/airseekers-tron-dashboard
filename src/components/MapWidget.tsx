@@ -5,15 +5,15 @@ export function MapWidget({
   geojsonTask,
   position,
   heading,
+  id,
 }: {
   geojsonTask: unknown | null;
   position: NavSatFixData | null;
   heading: number | null;
+  id?: string;
 }) {
-  // No Card wrapper here: the map fills the whole widget edge-to-edge (no title,
-  // no padding), so we render a bare card shell and let MapView own the space.
   return (
-    <div className="card card--wide map-card">
+    <div className="card card--wide map-card" id={id}>
       {geojsonTask || position ? (
         <MapView geojsonTask={geojsonTask} position={position} heading={heading} />
       ) : (

@@ -367,6 +367,21 @@
   min-width: 0;
 }
 
+.card--targeted {
+  animation: card-glow 4s ease forwards;
+}
+
+@keyframes card-glow {
+  0%, 40% {
+    border-color: var(--green);
+    box-shadow: 0 0 24px 4px rgba(74, 222, 128, 0.4), 0 0 8px rgba(74, 222, 128, 0.2);
+  }
+  100% {
+    border-color: var(--border);
+    box-shadow: var(--shadow);
+  }
+}
+
 .card--wide {
   grid-column: 1 / -1;
 }

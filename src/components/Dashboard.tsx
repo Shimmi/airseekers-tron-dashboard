@@ -81,7 +81,7 @@ export function Dashboard({
           rainSensorValue={data.sensorInfo?.rain_sensor_value != null ? Number(data.sensorInfo.rain_sensor_value) : null}
           id="widget-mower-status"
         />
-        <TaskWidget data={data.task} geojsonTask={data.geojsonTask} />
+        <TaskWidget data={data.task} geojsonTask={data.geojsonTask} id="widget-task" />
         <MotorsWidget
           data={data.motors}
           cutterHeight={data.task?.params[0]?.cutterHeight ?? null}
@@ -95,14 +95,16 @@ export function Dashboard({
           clearEstopStatus={clearEstopStatus}
           onStop={onStop}
           onClearEstop={onClearEstop}
+          id="widget-control"
         />
         <MapWidget
           geojsonTask={data.geojsonTask}
           position={data.fixFused ?? data.fix}
           heading={data.heading ?? data.localization?.pose?.yaw ?? null}
+          id="widget-map"
         />
-        <RosLogWidget logs={rosLogs} />
-        <LogWidget logs={logs} />
+        <RosLogWidget logs={rosLogs} id="widget-roslog" />
+        <LogWidget logs={logs} id="widget-log" />
       </div>
       <footer className="dashboard-footer">
         <span>Made with <span className="dashboard-footer-heart">♥</span> by <a href="https://github.com/Shimmi" target="_blank" rel="noopener noreferrer">Shimmi</a> in Czechia</span>

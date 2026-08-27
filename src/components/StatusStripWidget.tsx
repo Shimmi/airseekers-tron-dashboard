@@ -9,7 +9,7 @@ import {
   rssiColor,
   type Health,
 } from "../lib/status";
-import { Card } from "./Card";
+import { Card, updateHash } from "./Card";
 
 // Safety triggers, in priority order — the first active one is surfaced.
 const SAFETY_TRIGGERS: [key: string, label: string][] = [
@@ -189,9 +189,10 @@ function Indicator({
   icon: ReactNode;
   target?: string;
 }) {
-  const scrollToTarget = () => {
+  const navigateToTarget = () => {
     if (!target) return;
     posthog.capture("strip_indicator_clicked", { indicator: label.toLowerCase() });
+    updateHash(`#${target}`);
     document.getElementById(target)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
@@ -201,7 +202,7 @@ function Indicator({
       style={{ color: healthVar(health) }}
       title={title}
       data-umami-event={`strip-${label.toLowerCase()}`}
-      onClick={target ? scrollToTarget : undefined}
+      onClick={target ? (e) => { e.stopPropagation(); navigateToTarget(); } : undefined}
       role={target ? "button" : undefined}
       tabIndex={target ? 0 : undefined}
       onKeyDown={
@@ -209,7 +210,7 @@ function Indicator({
           ? (e) => {
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
-                scrollToTarget();
+                navigateToTarget();
               }
             }
           : undefined

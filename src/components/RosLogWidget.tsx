@@ -31,7 +31,7 @@ const LEVEL_SEVERITY: Record<string, number> = {
   fatal: 4,
 };
 
-export function RosLogWidget({ logs }: { logs: RosLogEntry[] }) {
+export function RosLogWidget({ logs, id }: { logs: RosLogEntry[]; id?: string }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState(false);
   const [pinned, setPinned] = useState(true);
@@ -104,7 +104,7 @@ export function RosLogWidget({ logs }: { logs: RosLogEntry[] }) {
   };
 
   return (
-    <div className="card card--wide roslog-card">
+    <div className="card card--wide roslog-card" id={id}>
       <div
         className={`expandable-header${expanded ? "" : " expandable-header--collapsed"}`}
         onClick={toggleExpanded}

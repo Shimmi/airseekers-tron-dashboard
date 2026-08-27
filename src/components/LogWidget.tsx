@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { LogEntry } from "../hooks/useMowerData";
 import { Chevron } from "./Card";
 
-export function LogWidget({ logs }: { logs: LogEntry[] }) {
+export function LogWidget({ logs, id }: { logs: LogEntry[]; id?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState(false);
   const hasBeenOpened = useRef(false);
@@ -26,7 +26,7 @@ export function LogWidget({ logs }: { logs: LogEntry[] }) {
   }, [logs, expanded]);
 
   return (
-    <div className="card card--wide">
+    <div className="card card--wide" id={id}>
       <div
         className={`expandable-header${expanded ? "" : " expandable-header--collapsed"}`}
         onClick={toggleExpanded}

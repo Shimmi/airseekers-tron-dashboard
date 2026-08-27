@@ -44,9 +44,10 @@ function ProgressBar({ fraction }: { fraction: number }) {
   );
 }
 
-export function TaskWidget({ data, geojsonTask }: {
+export function TaskWidget({ data, geojsonTask, id }: {
   data: TaskData | null;
   geojsonTask: unknown;
+  id?: string;
 }) {
   const state = data?.state || "";
   const isIdle = !data || state === "" || state === "idle";
@@ -83,7 +84,7 @@ export function TaskWidget({ data, geojsonTask }: {
 
   if (isIdle) {
     return (
-      <Card title="Task">
+      <Card title="Task" id={id}>
         <div className="task-idle">No active task</div>
       </Card>
     );
@@ -96,7 +97,7 @@ export function TaskWidget({ data, geojsonTask }: {
     : null;
 
   return (
-    <Card title="Task">
+    <Card title="Task" id={id}>
       <MetricRow
         label="State"
         value={

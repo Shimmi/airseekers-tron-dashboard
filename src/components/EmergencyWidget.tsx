@@ -8,6 +8,7 @@ export function ControlWidget({
   clearEstopStatus,
   onStop,
   onClearEstop,
+  id,
 }: {
   stopAvailable: boolean;
   clearEstopAvailable: boolean;
@@ -15,9 +16,10 @@ export function ControlWidget({
   clearEstopStatus: ServiceCallStatus;
   onStop: () => void;
   onClearEstop: () => void;
+  id?: string;
 }) {
   return (
-    <Card title="Mower Control">
+    <Card title="Mower Control" id={id}>
       <div className="ctrl-stack">
         <ActionButton
           label="STOP"

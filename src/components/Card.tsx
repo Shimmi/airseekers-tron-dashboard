@@ -1,4 +1,23 @@
-import type { ReactNode } from "react";
+import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+
+let glowSeq = 0;
+
+export function updateHash(hash: string) {
+  glowSeq++;
+  history.replaceState(null, "", hash || location.pathname + location.search);
+  window.dispatchEvent(new HashChangeEvent("hashchange"));
+}
+
+let globalListenerActive = false;
+function ensureGlobalClickListener() {
+  if (globalListenerActive) return;
+  globalListenerActive = true;
+  document.addEventListener("click", (e) => {
+    if (!location.hash) return;
+    if ((e.target as Element).closest?.(".card")) return;
+    updateHash("");
+  });
+}
 
 export function Card({
   title,
@@ -13,8 +32,40 @@ export function Card({
   id?: string;
   hideTitle?: boolean;
 }) {
+  const [targeted, setTargeted] = useState(() => !!id && location.hash === `#${id}`);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const lastSeq = useRef(glowSeq);
+
+  useEffect(() => {
+    if (!id) return;
+    ensureGlobalClickListener();
+    const check = () => {
+      const match = location.hash === `#${id}`;
+      setTargeted(match);
+      if (match && cardRef.current && glowSeq !== lastSeq.current) {
+        lastSeq.current = glowSeq;
+        const el = cardRef.current;
+        el.classList.remove("card--targeted");
+        void el.offsetWidth;
+        el.classList.add("card--targeted");
+      }
+    };
+    window.addEventListener("hashchange", check);
+    return () => window.removeEventListener("hashchange", check);
+  }, [id]);
+
+  const handleClick = useCallback(() => {
+    if (!id) return;
+    updateHash(`#${id}`);
+  }, [id]);
+
   return (
-    <div className={`card ${className}`} id={id}>
+    <div
+      ref={cardRef}
+      className={`card ${className}${targeted ? " card--targeted" : ""}`}
+      id={id}
+      onClick={id ? handleClick : undefined}
+    >
       {!hideTitle && <h2 className="card-title">{title}</h2>}
       {children}
     </div>
@@ -36,8 +87,6 @@ export function MetricRow({
   );
 }
 
-/** Shared right-pointing chevron, rotated 90deg to point down when expanded.
- * Used by every collapsible widget header so they all share one visual language. */
 export function Chevron({ expanded }: { expanded?: boolean }) {
   return (
     <svg
