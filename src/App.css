@@ -2005,9 +2005,29 @@
 }
 
 .map-style-toggle:hover,
-.map-reset:hover {
+.map-reset:hover,
+.map-overlay-toggle:hover {
   color: var(--text);
   border-color: var(--text2);
+}
+
+.map-overlay-toggle {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
+  color: var(--text2);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  opacity: 0.6;
+}
+
+.map-overlay-toggle--active {
+  opacity: 1;
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 /* Popup — compact, theme-aware. Override mapbox-gl's default white bubble.

@@ -27,6 +27,7 @@ export function Dashboard({
   clearEstopStatus,
   onStop,
   onClearEstop,
+  setOverlayTopics,
 }: {
   data: MowerData;
   logs: LogEntry[];
@@ -37,6 +38,7 @@ export function Dashboard({
   clearEstopStatus: ServiceCallStatus;
   onStop: () => void;
   onClearEstop: () => void;
+  setOverlayTopics: (topics: string[]) => void;
 }) {
   const nrtkEnabled =
     data.gpsInfo?.nrtkEnabled ??
@@ -110,6 +112,10 @@ export function Dashboard({
           geojsonTask={data.geojsonTask}
           position={data.fixFused ?? data.fix}
           heading={data.heading ?? data.localization?.pose?.yaw ?? null}
+          planningPath={data.planningPath}
+          coverageImage={data.coverageImage}
+          occupancyGrid={data.map}
+          setOverlayTopics={setOverlayTopics}
           id="widget-map"
         />
         <NoticeLogWidget notices={notices} id="widget-notices" />

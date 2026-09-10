@@ -11,8 +11,9 @@ import Map, {
 import type { MapLayerMouseEvent } from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import area from "@turf/area";
-import type { NavSatFixData } from "../lib/parsers";
+import type { CoverageImageData, NavSatFixData, OccupancyGridData, PathData } from "../lib/parsers";
 import { ZONE_TYPE, AREA_TYPES, formatArea } from "../lib/geojson";
+import { type TransformParams, transformFromDock, mapToWgs84, gridCornersToWgs84 } from "../lib/transform";
 
 const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
 
@@ -151,6 +152,23 @@ const pointCircles: LayerProps = {
   },
 };
 
+const planningPathLine: LayerProps = {
+  id: "planning-path",
+  type: "line",
+  paint: {
+    "line-color": "#f59e0b",
+    "line-width": 2,
+    "line-opacity": 0.7,
+    "line-dasharray": [3, 2],
+  },
+};
+
+const coverageFill: LayerProps = {
+  id: "coverage-fill",
+  type: "raster",
+  paint: { "raster-opacity": 0.45 },
+};
+
 const INTERACTIVE_LAYERS = ["mowing-fill", "poly-fill", "dock-approach-fill", "dock-station-fill", "channel-line", "points"];
 
 const LEGEND: { className: string; label: string }[] = [
@@ -241,10 +259,18 @@ export function MapView({
   geojsonTask,
   position,
   heading,
+  planningPath,
+  coverageImage,
+  occupancyGrid,
+  setOverlayTopics,
 }: {
   geojsonTask: unknown;
   position: NavSatFixData | null;
   heading: number | null;
+  planningPath: PathData | null;
+  coverageImage: CoverageImageData | null;
+  occupancyGrid: OccupancyGridData | null;
+  setOverlayTopics: (topics: string[]) => void;
 }) {
   const mapRef = useRef<MapRef | null>(null);
   const frameRef = useRef<HTMLDivElement | null>(null);
@@ -287,6 +313,86 @@ export function MapView({
     }
     return { charge, rotation };
   }, [geojsonTask]);
+
+  // ── Coordinate transform: local map frame → WGS84 ──
+  const transform = useMemo<TransformParams | null>(() => {
+    if (!dockInfo) return null;
+    return transformFromDock(dockInfo.charge.lat, dockInfo.charge.lng, dockInfo.rotation);
+  }, [dockInfo]);
+
+  // ── Overlay toggles (persisted to localStorage) ──
+  const [showPath, setShowPath] = useState(() => {
+    try { return localStorage.getItem("tron-overlay-path") !== "0"; } catch { return true; }
+  });
+  const [showCoverage, setShowCoverage] = useState(() => {
+    try { return localStorage.getItem("tron-overlay-coverage") !== "0"; } catch { return true; }
+  });
+  useEffect(() => { try { localStorage.setItem("tron-overlay-path", showPath ? "1" : "0"); } catch {} }, [showPath]);
+  useEffect(() => { try { localStorage.setItem("tron-overlay-coverage", showCoverage ? "1" : "0"); } catch {} }, [showCoverage]);
+
+  useEffect(() => {
+    setOverlayTopics(showCoverage ? ["/map/layer/cover"] : []);
+    return () => setOverlayTopics([]);
+  }, [showCoverage, setOverlayTopics]);
+
+  // ── Planning path → GeoJSON LineString ──
+  const pathGeoJson = useMemo<GeoJSON.FeatureCollection | null>(() => {
+    if (!showPath || !planningPath || !transform) return null;
+    const coords = planningPath.poses.map((p) => {
+      const { lat, lon } = mapToWgs84(p.x, p.y, transform);
+      return [lon, lat] as [number, number];
+    });
+    if (coords.length < 2) return null;
+    return {
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        properties: {},
+        geometry: { type: "LineString", coordinates: coords },
+      }],
+    };
+  }, [planningPath, transform, showPath]);
+
+  // ── Coverage grid → canvas data URL ──
+  const coverageSource = useMemo<{
+    url: string;
+    coordinates: [[number, number], [number, number], [number, number], [number, number]];
+  } | null>(() => {
+    if (!showCoverage || !coverageImage || !occupancyGrid || !transform) return null;
+    const { width, height, data } = coverageImage;
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    const img = ctx.createImageData(width, height);
+    const px = img.data;
+    for (let row = 0; row < height; row++) {
+      for (let col = 0; col < width; col++) {
+        const srcIdx = row * width + col;
+        const dstIdx = srcIdx * 4;
+        const v = data[srcIdx];
+        if (v > 0) {
+          px[dstIdx] = 61;     // R — matches mowing zone green #3dd68c
+          px[dstIdx + 1] = 214; // G
+          px[dstIdx + 2] = 140; // B
+          px[dstIdx + 3] = 200; // A
+        }
+        // v === 0 → transparent (not covered)
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+    const url = canvas.toDataURL();
+    const corners = gridCornersToWgs84(
+      occupancyGrid.originX,
+      occupancyGrid.originY,
+      occupancyGrid.width,
+      occupancyGrid.height,
+      occupancyGrid.resolution,
+      transform,
+    );
+    return { url, coordinates: corners };
+  }, [coverageImage, occupancyGrid, transform, showCoverage]);
 
   const markerScale = useMemo(() => {
     const base = 18;
@@ -400,6 +506,23 @@ export function MapView({
           </Source>
         ) : null}
 
+        {coverageSource ? (
+          <Source
+            id="coverage-grid"
+            type="image"
+            url={coverageSource.url}
+            coordinates={coverageSource.coordinates}
+          >
+            <Layer {...coverageFill} />
+          </Source>
+        ) : null}
+
+        {pathGeoJson ? (
+          <Source id="planning-path" type="geojson" data={pathGeoJson}>
+            <Layer {...planningPathLine} />
+          </Source>
+        ) : null}
+
         {dockInfo ? (
           <Marker longitude={dockInfo.charge.lng} latitude={dockInfo.charge.lat} anchor="center">
             <img
@@ -487,6 +610,20 @@ export function MapView({
           aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
         >
           {isFullscreen ? "Exit" : "Fullscreen"}
+        </button>
+        <button
+          className={`map-overlay-toggle${showPath ? " map-overlay-toggle--active" : ""}`}
+          onClick={() => setShowPath((v) => !v)}
+          title="Toggle mowing path overlay"
+        >
+          Path
+        </button>
+        <button
+          className={`map-overlay-toggle${showCoverage ? " map-overlay-toggle--active" : ""}`}
+          onClick={() => setShowCoverage((v) => !v)}
+          title="Toggle coverage overlay"
+        >
+          Coverage
         </button>
       </div>
 

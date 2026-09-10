@@ -500,6 +500,48 @@ export function mapHeadingFused(msg: Record<string, unknown>): number | null {
   return typeof v === "number" && Number.isFinite(v) ? v : null;
 }
 
+// ── nav_msgs/Path ──────────────────────────────────────────────────────
+
+export interface PathData {
+  poses: { x: number; y: number; z: number }[];
+}
+
+export function mapPath(msg: Record<string, unknown>): PathData | null {
+  const raw = msg.poses as Array<Record<string, unknown>> | undefined;
+  if (!raw?.length) return null;
+  const poses = raw.map((ps) => {
+    const pose = ps.pose as Record<string, unknown> | undefined;
+    const pos = pose?.position as Record<string, unknown> | undefined;
+    return {
+      x: Number(pos?.x ?? 0),
+      y: Number(pos?.y ?? 0),
+      z: Number(pos?.z ?? 0),
+    };
+  });
+  return { poses };
+}
+
+// ── Coverage image metadata (sensor_msgs/Image as grid layer) ──────────
+
+export interface CoverageImageData {
+  width: number;
+  height: number;
+  data: Uint8Array;
+}
+
+export function mapCoverageImage(
+  msg: Record<string, unknown>,
+): CoverageImageData | null {
+  const width = Number(msg.width ?? 0);
+  const height = Number(msg.height ?? 0);
+  if (!width || !height) return null;
+  const raw = msg.data;
+  const data =
+    raw instanceof Uint8Array ? raw : new Uint8Array((raw as ArrayLike<number>) ?? []);
+  if (data.length < width * height) return null;
+  return { width, height, data };
+}
+
 function closeUnclosedRings(fc: GeoJSON.FeatureCollection): void {
   for (const feature of fc.features ?? []) {
     if (feature.geometry?.type !== "Polygon") continue;

@@ -27,6 +27,7 @@ export function App() {
     startCamera,
     stopCamera,
     setDynamicTopics,
+    setOverlayTopics,
     subscribeImage,
     unsubscribeImage,
   } = useMowerData();
@@ -74,6 +75,7 @@ export function App() {
             clearEstopStatus={clearEstopStatus}
             onStop={stop}
             onClearEstop={clearEstop}
+            setOverlayTopics={setOverlayTopics}
           />
         )
       ) : (

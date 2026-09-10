@@ -48,6 +48,7 @@ export class FoxgloveClient {
   #nextCallId = 1;
   #deserializeErrorLogged = new Set<string>();
   #desiredDynamicTopics = new Set<string>();
+  #desiredOverlayTopics = new Set<string>();
   #imageTopics = new Set<string>();
   #reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   #connectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -121,6 +122,15 @@ export class FoxgloveClient {
     }
     this.#desiredDynamicTopics = next;
     this.#imageTopics = new Set(next);
+    for (const topic of next) this.#subscribeTopic(topic);
+  }
+
+  setOverlayTopics(topics: string[]) {
+    const next = new Set(topics);
+    for (const topic of this.#desiredOverlayTopics) {
+      if (!next.has(topic)) this.#unsubscribeTopic(topic);
+    }
+    this.#desiredOverlayTopics = next;
     for (const topic of next) this.#subscribeTopic(topic);
   }
 
@@ -339,10 +349,12 @@ export class FoxgloveClient {
       "/notice_code",
       "/heading_fused",
       "/rosout_agg",
+      "/planning/coverage_path_new",
     ];
 
     for (const topic of targets) this.#subscribeTopic(topic);
     for (const topic of this.#desiredDynamicTopics) this.#subscribeTopic(topic);
+    for (const topic of this.#desiredOverlayTopics) this.#subscribeTopic(topic);
     this.#callbacks.onLog(
       `Subscribed to ${this.#subscribedTopics.size} topics`,
       "ok",

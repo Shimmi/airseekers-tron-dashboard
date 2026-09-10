@@ -4,6 +4,7 @@ import { type ConnectionState, type ImageMessage, FoxgloveClient } from "../lib/
 import {
   type BatteryData,
   type BatteryHealthData,
+  type CoverageImageData,
   type DevBaseInfoData,
   type GpsInfoData,
   type LocalizationData,
@@ -12,12 +13,14 @@ import {
   type NavSatFixData,
   type NoticeEntry,
   type OccupancyGridData,
+  type PathData,
   type PolygonData,
   type RefInfoData,
   type RosLogEntry,
   type TaskData,
   mapBattery,
   mapBatteryHealth,
+  mapCoverageImage,
   mapDevBaseInfo,
   mapGeoJsonTask,
   mapGpsInfo,
@@ -27,6 +30,7 @@ import {
   mapNavSatFix,
   mapNotice,
   mapOccupancyGrid,
+  mapPath,
   mapPolygon,
   mapRefInfo,
   mapRosLog,
@@ -54,6 +58,8 @@ export interface MowerData {
   fix: NavSatFixData | null;
   fixFused: NavSatFixData | null;
   heading: number | null;
+  planningPath: PathData | null;
+  coverageImage: CoverageImageData | null;
 }
 
 export interface LogEntry {
@@ -90,6 +96,8 @@ export function useMowerData() {
     fix: null,
     fixFused: null,
     heading: null,
+    planningPath: null,
+    coverageImage: null,
   });
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [rosLogs, setRosLogs] = useState<RosLogEntry[]>([]);
@@ -295,6 +303,16 @@ export function useMowerData() {
             }
             break;
           }
+          case "/planning/coverage_path_new": {
+            const planningPath = mapPath(msg);
+            if (planningPath) setData((d) => ({ ...d, planningPath }));
+            break;
+          }
+          case "/map/layer/cover": {
+            const coverageImage = mapCoverageImage(msg);
+            if (coverageImage) setData((d) => ({ ...d, coverageImage }));
+            break;
+          }
           case "/rosout":
           case "/rosout_agg": {
             const entry = mapRosLog(msg);
@@ -401,6 +419,10 @@ export function useMowerData() {
     clientRef.current?.setDynamicTopics(topics);
   }, []);
 
+  const setOverlayTopics = useCallback((topics: string[]) => {
+    clientRef.current?.setOverlayTopics(topics);
+  }, []);
+
   const subscribeImage = useCallback((topic: string, handler: (msg: ImageMessage) => void) => {
     imageSubscribers.current.set(topic, handler);
   }, []);
@@ -434,6 +456,7 @@ export function useMowerData() {
     startCamera,
     stopCamera,
     setDynamicTopics,
+    setOverlayTopics,
     subscribeImage,
     unsubscribeImage,
   };
