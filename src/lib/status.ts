@@ -95,18 +95,71 @@ export function getLocError(code: number | null): { label: string; health: Healt
   return { label: `Error (${code})`, health: "red" };
 }
 
-export function getPrecision(status: string): PrecisionLevel {
-  if (status.includes("NARROW_INT"))
-    return { label: "Centimeter", short: "Fixed", detail: "Carrier-phase ambiguities resolved — may toggle near threshold", variant: "green" };
-  if (status.includes("NARROW_FLOAT"))
-    return { label: "Sub-meter", short: "Float", detail: "Ambiguities not yet fixed — can toggle even when signal looks unchanged", variant: "yellow" };
-  if (status.includes("WIDE_INT"))
-    return { label: "Decimeter", short: "W-Int", detail: "Wide-lane ambiguities resolved — intermediate accuracy", variant: "yellow" };
-  if (status.includes("WIDE_FLOAT"))
-    return { label: "Sub-meter", short: "W-Float", detail: "Wide-lane float — ambiguities not yet fixed", variant: "yellow" };
-  if (status === "DGPS")
-    return { label: "1–2 m", short: "DGPS", detail: "Differential GPS correction only", variant: "red" };
-  if (status === "SINGLE")
-    return { label: "2–5 m", short: "Single", detail: "Standalone GPS — no RTK corrections", variant: "red" };
-  return { label: "--", short: "--", detail: "No positioning data", variant: "gray" };
+// ── Positioning precision ───────────────────────────────────────────
+// Classifies the GNSS receiver's position type (Unicore UM980, NovAtel-style
+// tokens) by the actual SOLUTION, not by signal / correction health: a FINE base
+// link and a high "GPS Quality" can coexist with a non-RTK solution (e.g. PSRDIFF).
+// Semantics + sources: airseekers-tron/docs/kb/rtk-positioning-states.md
+//
+// Rules:
+//  * Only an RTK integer fix is green. Float / wide-lane = yellow. Code-differential,
+//    SBAS, single-point and stale solutions = red.
+//  * An unrecognised-but-present token is SURFACED (yellow "Unknown"), never folded
+//    into "no data" — that is how PSRDIFF used to disappear from the UI.
+//  * Empty / missing status keeps label "--" so the GPS banner stays hidden.
+
+// Ordered: exact match first, then the first token contained in the raw status
+// (keeps the previous `includes()` tolerance; specific tokens come before generic ones).
+const PRECISION_TABLE: [token: string, level: PrecisionLevel][] = [
+  // RTK fixed — centimeter
+  ["NARROW_INT", { label: "Centimeter", short: "Fixed", detail: "RTK fixed — carrier-phase ambiguities resolved; may toggle near threshold", variant: "green" }],
+  ["L1_INT", { label: "Centimeter", short: "Fixed", detail: "Single-frequency RTK fixed — ambiguities resolved", variant: "green" }],
+  ["INS_RTKFIXED", { label: "Centimeter", short: "Fixed", detail: "INS-aided RTK fixed solution", variant: "green" }],
+  // Converging — decimeter / sub-meter
+  ["WIDE_INT", { label: "Decimeter", short: "W-Int", detail: "Wide-lane ambiguities resolved — intermediate accuracy, not yet a full fix", variant: "yellow" }],
+  ["NARROW_FLOAT", { label: "Sub-meter", short: "Float", detail: "RTK float — ambiguities not yet fixed; can toggle even when signal looks unchanged", variant: "yellow" }],
+  ["L1_FLOAT", { label: "Sub-meter", short: "Float", detail: "Single-frequency RTK float — ambiguities not yet fixed", variant: "yellow" }],
+  ["IONOFREE_FLOAT", { label: "Sub-meter", short: "Float", detail: "Iono-free RTK float — ambiguities not yet fixed", variant: "yellow" }],
+  ["WIDE_FLOAT", { label: "Sub-meter", short: "W-Float", detail: "Wide-lane float — ambiguities not yet fixed", variant: "yellow" }],
+  ["INS_RTKFLOAT", { label: "Sub-meter", short: "Float", detail: "INS-aided RTK float", variant: "yellow" }],
+  // No RTK solution — low precision
+  ["PSRDIFF", { label: "Low precision", short: "PSRDIFF", detail: "Pseudorange differential (DGPS, ~0.4 m) — corrections are arriving, but no RTK carrier-phase fix yet", variant: "red" }],
+  ["DGPS", { label: "Low precision", short: "DGPS", detail: "Differential GPS (same class as PSRDIFF, ~0.4 m) — no RTK fix", variant: "red" }],
+  ["WAAS", { label: "Low precision", short: "SBAS", detail: "SBAS-corrected single point — no RTK fix", variant: "red" }],
+  ["SBAS", { label: "Low precision", short: "SBAS", detail: "SBAS-corrected single point — no RTK fix", variant: "red" }],
+  ["SINGLE", { label: "2–5 m", short: "Single", detail: "Standalone GPS — no RTK corrections applied", variant: "red" }],
+  ["PSRSP", { label: "2–5 m", short: "Single", detail: "Pseudorange single point — no corrections applied", variant: "red" }],
+  ["PROPAGATED", { label: "Stale", short: "Stale", detail: "Propagated from the last solution — position may be drifting", variant: "red" }],
+  ["DOPPLER_VELOCITY", { label: "No position", short: "Doppler", detail: "Doppler velocity only — no usable position fix", variant: "red" }],
+  ["FIXEDPOS", { label: "Manual", short: "FixedPos", detail: "Position fixed by configuration, not computed from GNSS", variant: "gray" }],
+  ["FIXEDHEIGHT", { label: "Manual", short: "FixedHt", detail: "Height constrained by configuration", variant: "gray" }],
+  ["NONE", { label: "No fix", short: "No fix", detail: "Receiver reports no position solution", variant: "red" }],
+];
+
+const PRECISION_BY_TOKEN = new Map(PRECISION_TABLE);
+
+const NO_PRECISION: PrecisionLevel = { label: "--", short: "--", detail: "No positioning data", variant: "gray" };
+
+export function getPrecision(status: string | null | undefined): PrecisionLevel {
+  const token = (status ?? "").trim().toUpperCase();
+  if (!token) return NO_PRECISION;
+
+  const exact = PRECISION_BY_TOKEN.get(token);
+  if (exact) return exact;
+
+  const partial = PRECISION_TABLE.find(([t]) => token.includes(t));
+  if (partial) return partial[1];
+
+  // Present but unrecognised: show it instead of hiding it.
+  return {
+    label: "Unknown",
+    short: token.length > 10 ? `${token.slice(0, 9)}…` : token,
+    detail: `Unrecognised positioning mode "${status}" — precision not verified. Please report it.`,
+    variant: "yellow",
+  };
+}
+
+/** True only for a genuine RTK integer (centimeter) fix. */
+export function isRtkFixed(status: string | null | undefined): boolean {
+  return getPrecision(status).variant === "green";
 }
