@@ -113,7 +113,7 @@ export function GpsWidget({
         />
         <GpsMetric
           label="GPS Quality"
-          hint="Overall signal quality · 80+ is good"
+          hint="Receiver signal quality only · not an RTK fix indicator"
           value={gpsInfo?.quality ?? "--"}
           unit="%"
           color={typeof gpsInfo?.quality === "number" ? colorForValue(gpsInfo.quality, 80, 50) : undefined}
