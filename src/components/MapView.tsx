@@ -14,6 +14,7 @@ import area from "@turf/area";
 import type { CoverageImageData, NavSatFixData, OccupancyGridData, PathData } from "../lib/parsers";
 import { ZONE_TYPE, AREA_TYPES, formatArea } from "../lib/geojson";
 import { type TransformParams, transformFromDock, mapToWgs84, gridCornersToWgs84 } from "../lib/transform";
+import type { WalkPoint } from "../lib/localApi";
 
 const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
 
@@ -37,6 +38,9 @@ const COLOR = {
   charge: "#f0c246",
   undock: "#a855f7",
   nrtk: "#4f8ff7",
+  planningPath: "#f59e0b",
+  // Violet: distinct from the blue channels/NRTK and the green zones.
+  track: "#c084fc",
 } as const;
 
 const TYPE_LABEL: Record<number, string> = {
@@ -156,10 +160,23 @@ const planningPathLine: LayerProps = {
   id: "planning-path",
   type: "line",
   paint: {
-    "line-color": "#f59e0b",
+    "line-color": COLOR.planningPath,
     "line-width": 2,
     "line-opacity": 0.7,
     "line-dasharray": [3, 2],
+  },
+};
+
+// Driven track (local HTTP API): solid, so it reads as "where it went" next to
+// the dashed planned path.
+const walkPathLine: LayerProps = {
+  id: "walk-path",
+  type: "line",
+  layout: { "line-join": "round", "line-cap": "round" },
+  paint: {
+    "line-color": COLOR.track,
+    "line-width": 2.5,
+    "line-opacity": 0.9,
   },
 };
 
@@ -262,7 +279,10 @@ export function MapView({
   planningPath,
   coverageImage,
   occupancyGrid,
+  walkPath,
+  walkPathError,
   setOverlayTopics,
+  setWalkPathEnabled,
 }: {
   geojsonTask: unknown;
   position: NavSatFixData | null;
@@ -270,7 +290,10 @@ export function MapView({
   planningPath: PathData | null;
   coverageImage: CoverageImageData | null;
   occupancyGrid: OccupancyGridData | null;
+  walkPath: WalkPoint[] | null;
+  walkPathError: string | null;
   setOverlayTopics: (topics: string[]) => void;
+  setWalkPathEnabled: (enabled: boolean) => void;
 }) {
   const mapRef = useRef<MapRef | null>(null);
   const frameRef = useRef<HTMLDivElement | null>(null);
@@ -329,6 +352,15 @@ export function MapView({
   });
   useEffect(() => { try { localStorage.setItem("tron-overlay-path", showPath ? "1" : "0"); } catch {} }, [showPath]);
   useEffect(() => { try { localStorage.setItem("tron-overlay-coverage", showCoverage ? "1" : "0"); } catch {} }, [showCoverage]);
+  const [showTrack, setShowTrack] = useState(() => {
+    try { return localStorage.getItem("tron-overlay-track") !== "0"; } catch { return true; }
+  });
+  useEffect(() => { try { localStorage.setItem("tron-overlay-track", showTrack ? "1" : "0"); } catch {} }, [showTrack]);
+
+  useEffect(() => {
+    setWalkPathEnabled(showTrack);
+    return () => setWalkPathEnabled(false);
+  }, [showTrack, setWalkPathEnabled]);
 
   useEffect(() => {
     setOverlayTopics(showCoverage ? ["/map/layer/cover"] : []);
@@ -352,6 +384,23 @@ export function MapView({
       }],
     };
   }, [planningPath, transform, showPath]);
+
+  // ── Driven track → GeoJSON LineString (same local frame as the planning path) ──
+  const trackGeoJson = useMemo<GeoJSON.FeatureCollection | null>(() => {
+    if (!showTrack || !walkPath || !transform || walkPath.length < 2) return null;
+    const coords = walkPath.map((p) => {
+      const { lat, lon } = mapToWgs84(p.x, p.y, transform);
+      return [lon, lat] as [number, number];
+    });
+    return {
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        properties: {},
+        geometry: { type: "LineString", coordinates: coords },
+      }],
+    };
+  }, [walkPath, transform, showTrack]);
 
   // ── Coverage grid → canvas data URL ──
   const coverageSource = useMemo<{
@@ -523,6 +572,12 @@ export function MapView({
           </Source>
         ) : null}
 
+        {trackGeoJson ? (
+          <Source id="walk-path" type="geojson" data={trackGeoJson}>
+            <Layer {...walkPathLine} />
+          </Source>
+        ) : null}
+
         {dockInfo ? (
           <Marker longitude={dockInfo.charge.lng} latitude={dockInfo.charge.lat} anchor="center">
             <img
@@ -586,6 +641,16 @@ export function MapView({
             <span className={`map-swatch ${className}`} /> {label}
           </span>
         ))}
+        {pathGeoJson ? (
+          <span className="map-legend-item">
+            <span className="map-swatch map-swatch--line map-swatch--path" /> Planned path
+          </span>
+        ) : null}
+        {trackGeoJson ? (
+          <span className="map-legend-item">
+            <span className="map-swatch map-swatch--line map-swatch--track" /> Driven track
+          </span>
+        ) : null}
         <span className="map-legend-item">
           <img src="/base_station.png" alt="" className="map-legend-icon" /> Station
         </span>
@@ -624,6 +689,13 @@ export function MapView({
           title="Toggle coverage overlay"
         >
           Coverage
+        </button>
+        <button
+          className={`map-overlay-toggle${showTrack ? " map-overlay-toggle--active" : ""}${showTrack && walkPathError ? " map-overlay-toggle--unavailable" : ""}`}
+          onClick={() => setShowTrack((v) => !v)}
+          title={showTrack && walkPathError ? `Driven track unavailable: ${walkPathError}` : "Toggle driven track overlay"}
+        >
+          Track
         </button>
       </div>
 

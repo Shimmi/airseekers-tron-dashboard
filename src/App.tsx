@@ -20,6 +20,7 @@ export function App() {
     stopStatus,
     clearEstopStatus,
     cameraStatus,
+    walkPathError,
     connect,
     disconnect,
     stop,
@@ -28,6 +29,7 @@ export function App() {
     stopCamera,
     setDynamicTopics,
     setOverlayTopics,
+    setWalkPathEnabled,
     subscribeImage,
     unsubscribeImage,
   } = useMowerData();
@@ -76,6 +78,8 @@ export function App() {
             onStop={stop}
             onClearEstop={clearEstop}
             setOverlayTopics={setOverlayTopics}
+            setWalkPathEnabled={setWalkPathEnabled}
+            walkPathError={walkPathError}
           />
         )
       ) : (

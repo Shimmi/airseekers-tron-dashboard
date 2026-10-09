@@ -28,6 +28,8 @@ export function Dashboard({
   onStop,
   onClearEstop,
   setOverlayTopics,
+  setWalkPathEnabled,
+  walkPathError,
 }: {
   data: MowerData;
   logs: LogEntry[];
@@ -39,6 +41,8 @@ export function Dashboard({
   onStop: () => void;
   onClearEstop: () => void;
   setOverlayTopics: (topics: string[]) => void;
+  setWalkPathEnabled: (enabled: boolean) => void;
+  walkPathError: string | null;
 }) {
   const nrtkEnabled =
     data.gpsInfo?.nrtkEnabled ??
@@ -115,7 +119,10 @@ export function Dashboard({
           planningPath={data.planningPath}
           coverageImage={data.coverageImage}
           occupancyGrid={data.map}
+          walkPath={data.walkPath}
+          walkPathError={walkPathError}
           setOverlayTopics={setOverlayTopics}
+          setWalkPathEnabled={setWalkPathEnabled}
           id="widget-map"
         />
         <NoticeLogWidget notices={notices} id="widget-notices" />

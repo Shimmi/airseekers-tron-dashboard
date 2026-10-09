@@ -2030,6 +2030,13 @@
   color: var(--accent);
 }
 
+/* Enabled but its data source can't be reached (e.g. HTTP API blocked). */
+.map-overlay-toggle--unavailable {
+  border-color: var(--yellow);
+  color: var(--yellow);
+  border-style: dashed;
+}
+
 /* Popup — compact, theme-aware. Override mapbox-gl's default white bubble.
    pointer-events:none so a hover popup never sits between cursor and canvas
    (which would flicker it as the map loses/regains the pointer). */
@@ -2119,6 +2126,23 @@
 
 .map-swatch--channel {
   background: #4f8ff7;
+}
+
+/* Line overlays: a short stroke instead of a filled square. */
+.map-swatch--line {
+  height: 0;
+  border-radius: 0;
+  border-top-width: 2px;
+  border-top-style: solid;
+}
+
+.map-swatch--path {
+  border-top-color: #f59e0b;
+  border-top-style: dashed;
+}
+
+.map-swatch--track {
+  border-top-color: #c084fc;
 }
 
 .map-swatch--dock {

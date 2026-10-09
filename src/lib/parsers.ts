@@ -276,6 +276,7 @@ export interface TaskZoneParams {
 }
 
 export interface TaskData {
+  taskId: string | null;
   state: string;
   type: string;
   runTime: string;
@@ -295,6 +296,7 @@ function parseRunTimeSeconds(rt: string): number {
 
 export function mapTask(msg: Record<string, unknown>): TaskData {
   const raw = mapStringJson(msg);
+  const taskId = raw.taskId ? String(raw.taskId) : null;
   const state = String(raw.state ?? "");
   const type = String(raw.type ?? "");
   const runTime = String(raw.runTime ?? "");
@@ -318,7 +320,7 @@ export function mapTask(msg: Record<string, unknown>): TaskData {
     numPerimeters: Number(p.numPerimeters ?? 0),
   }));
 
-  return { state, type, runTime, topArea, remainingArea, mowed, params };
+  return { taskId, state, type, runTime, topArea, remainingArea, mowed, params };
 }
 
 export interface NavSatFixData {

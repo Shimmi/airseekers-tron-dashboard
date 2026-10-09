@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import posthog from "posthog-js";
 import { type ConnectionState, type ImageMessage, FoxgloveClient } from "../lib/foxglove";
+import { type WalkPoint, getWalkPath } from "../lib/localApi";
 import {
   type BatteryData,
   type BatteryHealthData,
@@ -60,6 +61,19 @@ export interface MowerData {
   heading: number | null;
   planningPath: PathData | null;
   coverageImage: CoverageImageData | null;
+  walkPath: WalkPoint[] | null;
+}
+
+// Driven track comes over the local HTTP API, not the bridge: poll it only
+// while a task can still extend it.
+const WALK_PATH_POLL_MS = 5000;
+
+function hostFromUrl(url: string): string | null {
+  try {
+    return new URL(url).hostname || null;
+  } catch {
+    return null;
+  }
 }
 
 export interface LogEntry {
@@ -98,6 +112,7 @@ export function useMowerData() {
     heading: null,
     planningPath: null,
     coverageImage: null,
+    walkPath: null,
   });
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [rosLogs, setRosLogs] = useState<RosLogEntry[]>([]);
@@ -106,6 +121,12 @@ export function useMowerData() {
   const [stopStatus, setStopStatus] = useState<ServiceCallStatus>({ state: "idle" });
   const [clearEstopStatus, setClearEstopStatus] = useState<ServiceCallStatus>({ state: "idle" });
   const [cameraStatus, setCameraStatus] = useState<Record<string, ServiceCallStatus>>({});
+  const [mowerHost, setMowerHost] = useState<string | null>(null);
+  const [walkPathEnabled, setWalkPathEnabled] = useState(false);
+  const [walkPathError, setWalkPathError] = useState<string | null>(null);
+  const [pageVisible, setPageVisible] = useState(() => !document.hidden);
+  const walkRef = useRef<{ key: string; points: WalkPoint[] }>({ key: "", points: [] });
+  const walkErrorRef = useRef<string | null>(null);
   const clientRef = useRef<FoxgloveClient | null>(null);
   const imageSubscribers = useRef<Map<string, (msg: ImageMessage) => void>>(new Map());
   const pendingCallIds = useRef<Map<number, string>>(new Map());
@@ -381,7 +402,65 @@ export function useMowerData() {
     };
   }, [handleMessage, onImage, addLog, onServiceResult]);
 
+  useEffect(() => {
+    const onChange = () => setPageVisible(!document.hidden);
+    document.addEventListener("visibilitychange", onChange);
+    return () => document.removeEventListener("visibilitychange", onChange);
+  }, []);
+
+  const taskId = data.task?.taskId ?? null;
+  const taskActive = data.task?.state === "running" || data.task?.state === "paused";
+
+  // Fetch the driven track once per task, then incrementally (point_index =
+  // points held) while the task runs. A new taskId (or mower) means a new track.
+  useEffect(() => {
+    if (!walkPathEnabled || !mowerHost || connectionState !== "connected" || !pageVisible) return;
+    if (window.location.protocol === "https:") {
+      setWalkPathError("Unavailable on an HTTPS page (mixed content) — serve the dashboard over HTTP");
+      return;
+    }
+    const key = `${mowerHost}|${taskId ?? ""}`;
+    if (walkRef.current.key !== key) {
+      walkRef.current = { key, points: [] };
+      setData((d) => ({ ...d, walkPath: null }));
+    }
+    let cancelled = false;
+    let inFlight = false;
+    let timer: ReturnType<typeof setInterval> | null = null;
+    const poll = async () => {
+      if (inFlight) return;
+      inFlight = true;
+      try {
+        const fresh = await getWalkPath(mowerHost, walkRef.current.points.length);
+        if (cancelled) return;
+        walkErrorRef.current = null;
+        setWalkPathError(null);
+        if (fresh.length === 0 && walkRef.current.points.length > 0) return;
+        walkRef.current.points = [...walkRef.current.points, ...fresh];
+        const points = walkRef.current.points;
+        setData((d) => ({ ...d, walkPath: points }));
+      } catch (e) {
+        if (cancelled) return;
+        const msg = e instanceof Error ? e.message : String(e);
+        if (walkErrorRef.current !== msg) addLog(`Walk path (HTTP :13344) unavailable: ${msg}`, "warn");
+        walkErrorRef.current = msg;
+        setWalkPathError(msg);
+        if (timer) clearInterval(timer);
+        timer = null;
+      } finally {
+        inFlight = false;
+      }
+    };
+    void poll();
+    if (taskActive) timer = setInterval(() => void poll(), WALK_PATH_POLL_MS);
+    return () => {
+      cancelled = true;
+      if (timer) clearInterval(timer);
+    };
+  }, [walkPathEnabled, mowerHost, connectionState, pageVisible, taskId, taskActive, addLog]);
+
   const connect = useCallback((url: string) => {
+    setMowerHost(hostFromUrl(url));
     clientRef.current?.connect(url);
   }, []);
 
@@ -449,6 +528,7 @@ export function useMowerData() {
     stopStatus,
     clearEstopStatus,
     cameraStatus,
+    walkPathError,
     connect,
     disconnect,
     stop,
@@ -457,6 +537,7 @@ export function useMowerData() {
     stopCamera,
     setDynamicTopics,
     setOverlayTopics,
+    setWalkPathEnabled,
     subscribeImage,
     unsubscribeImage,
   };
