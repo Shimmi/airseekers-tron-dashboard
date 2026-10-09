@@ -1362,6 +1362,23 @@
   margin-bottom: 14px;
 }
 
+/* Robot mode (/light_info) sits right after the state badge. */
+.status-mode {
+  margin-left: 10px;
+  margin-right: auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text2);
+}
+
+.status-mode--alert {
+  color: var(--red);
+}
+
+.status-alarms {
+  margin-bottom: 12px;
+}
+
 .triggers-toggle {
   display: inline-flex;
   align-items: center;

@@ -387,24 +387,37 @@ export interface MotorsData {
   height: MotorData;
 }
 
-function mapMotor(raw: Record<string, unknown> | undefined): MotorData {
+// Voltage scaling differs per board. Drive boards report ~655.36 counts/V and
+// the vendor republishes raw/100, so V = value / 6.5536 (live 160 ≈ 24.4 V vs
+// battery 24.7 V). The cutter board reports whole volts.
+const DRIVE_VOLTAGE_DIVISOR = 6.5536;
+
+function mapMotor(
+  raw: Record<string, unknown> | undefined,
+  { voltageDivisor = 1, wheel = false }: { voltageDivisor?: number; wheel?: boolean } = {},
+): MotorData {
   const statusRaw = raw?.status as Record<string, unknown> | undefined;
   const statusCode = Number(statusRaw?.status ?? 0);
+  const rpm = Number(raw?.speed_rpm ?? 0);
+  // Drive boards report RUNNING whenever enabled; at 0 RPM they are in
+  // position hold (current flows, the dock "hum"), not driving.
+  const holding = wheel && statusCode === 1 && rpm === 0;
   return {
-    rpm: Number(raw?.speed_rpm ?? 0),
+    rpm,
     current: Number(raw?.current ?? 0) / 100,
-    voltage: Number(raw?.voltage ?? 0) / 100,
+    voltage: Number(raw?.voltage ?? 0) / voltageDivisor,
     temperature: Number(raw?.temperature ?? 0),
-    status: MOTOR_STATUS_LABELS[statusCode] ?? `Unknown (${statusCode})`,
+    status: holding ? "Holding" : (MOTOR_STATUS_LABELS[statusCode] ?? `Unknown (${statusCode})`),
     error: statusCode < 0,
   };
 }
 
 export function mapMotors(msg: Record<string, unknown>): MotorsData {
+  const wheel = { voltageDivisor: DRIVE_VOLTAGE_DIVISOR, wheel: true };
   return {
     cutter: mapMotor(msg.cutter_motor as Record<string, unknown> | undefined),
-    left: mapMotor(msg.left_motor as Record<string, unknown> | undefined),
-    right: mapMotor(msg.right_motor as Record<string, unknown> | undefined),
+    left: mapMotor(msg.left_motor as Record<string, unknown> | undefined, wheel),
+    right: mapMotor(msg.right_motor as Record<string, unknown> | undefined, wheel),
     height: mapMotor(msg.height_motor as Record<string, unknown> | undefined),
   };
 }
@@ -495,6 +508,65 @@ export function mapNotice(msg: Record<string, unknown>): NoticeEntry {
     level: noticeLevel(code),
     time: ts > 0 ? new Date(ts * 1000).toLocaleTimeString() : new Date().toLocaleTimeString(),
   };
+}
+
+// ── Robot mode (/light_info) ──
+// The LED controller's current mode is the vendor's own one-word summary of
+// what the robot is doing. Names from the vendor enum (recon/external-mikey0000.md).
+const LIGHT_MODE_LABELS: Record<number, string> = {
+  0: "Mapping", 1: "Idle", 2: "Task starting", 4: "Paused", 6: "Powering on",
+  7: "Powering off", 8: "Updating firmware", 9: "Update finished", 10: "Pairing",
+  13: "Docking", 14: "Charging", 15: "Charged", 16: "Working", 17: "Low battery",
+  19: "Sensor warning", 20: "Robot fault", 21: "Signal error", 22: "Blade starting",
+  23: "Blade stopping", 24: "Remote control", 25: "Pairing failed", 26: "Error",
+  27: "Normal",
+};
+
+export interface RobotMode {
+  code: number;
+  label: string;
+  alert: boolean;
+}
+
+export function mapLightInfo(msg: Record<string, unknown>): RobotMode | null {
+  const code = Number(msg.data);
+  if (!Number.isFinite(code)) return null;
+  return {
+    code,
+    label: LIGHT_MODE_LABELS[code] ?? `Mode ${code}`,
+    alert: code === 17 || code === 19 || code === 20 || code === 21 || code === 25 || code === 26,
+  };
+}
+
+// ── Alarms (/alarm_status) ──
+// UInt64 bitmask; each bit maps to a notice code. Only these bits are known
+// (vendor status.proto via recon/external-mikey0000.md) — others show as "bit N".
+const ALARM_BIT_CODES: Record<number, number> = {
+  0: 900017, 1: 900018, 2: 400005, 3: 800002, 4: 900055, 5: 600004, 31: 100105,
+};
+
+export interface ActiveAlarm {
+  bit: number;
+  code: number | null;
+  label: string;
+}
+
+export function mapAlarmStatus(msg: Record<string, unknown>): ActiveAlarm[] {
+  const raw = msg.data;
+  let value: bigint;
+  try {
+    value = typeof raw === "bigint" ? raw : BigInt(Math.trunc(Number(raw ?? 0)));
+  } catch {
+    return [];
+  }
+  const alarms: ActiveAlarm[] = [];
+  for (let bit = 0; bit < 64 && value > 0n; bit++) {
+    if ((value >> BigInt(bit)) & 1n) {
+      const code = ALARM_BIT_CODES[bit] ?? null;
+      alarms.push({ bit, code, label: code != null ? (NOTICE_LABELS[code] ?? `Code ${code}`) : `Alarm bit ${bit}` });
+    }
+  }
+  return alarms;
 }
 
 export function mapHeadingFused(msg: Record<string, unknown>): number | null {

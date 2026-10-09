@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { MowerStatusData } from "../lib/parsers";
+import type { ActiveAlarm, MowerStatusData, RobotMode } from "../lib/parsers";
 import { Badge, Card } from "./Card";
 
 const STATE_VARIANT: Record<string, "green" | "yellow" | "red" | "blue" | "gray"> = {
@@ -76,7 +76,19 @@ function FilterIcon({ active }: { active: boolean }) {
   );
 }
 
-export function StatusWidget({ data, rainSensorValue, id }: { data: MowerStatusData | null; rainSensorValue: number | null; id?: string }) {
+export function StatusWidget({
+  data,
+  rainSensorValue,
+  robotMode,
+  alarms,
+  id,
+}: {
+  data: MowerStatusData | null;
+  rainSensorValue: number | null;
+  robotMode: RobotMode | null;
+  alarms: ActiveAlarm[] | null;
+  id?: string;
+}) {
   const [showAll, setShowAll] = useState(true);
   const activeCount = data
     ? Object.values(data.triggers).filter(Boolean).length
@@ -88,6 +100,14 @@ export function StatusWidget({ data, rainSensorValue, id }: { data: MowerStatusD
         <Badge variant={data ? STATE_VARIANT[data.state] || "gray" : "gray"}>
           {data?.state ?? "--"}
         </Badge>
+        {robotMode && (
+          <span
+            className={`status-mode${robotMode.alert ? " status-mode--alert" : ""}`}
+            title={`Robot mode from /light_info (code ${robotMode.code})`}
+          >
+            {robotMode.label}
+          </span>
+        )}
         {data && (
           <button
             className={`triggers-toggle${showAll ? "" : " triggers-toggle--active"}`}
@@ -99,6 +119,24 @@ export function StatusWidget({ data, rainSensorValue, id }: { data: MowerStatusD
           </button>
         )}
       </div>
+
+      {alarms && alarms.length > 0 && (
+        <div className="trigger-group status-alarms">
+          <div className="trigger-group-label">Alarms</div>
+          <div className="trigger-group-items">
+            {alarms.map((a) => (
+              <span
+                key={a.bit}
+                className="trigger-chip trigger-chip--active trigger-chip--alert"
+                title={a.code != null ? `Notice ${a.code} (alarm bit ${a.bit})` : `Unmapped alarm bit ${a.bit}`}
+              >
+                <span className="trigger-chip-dot" />
+                {a.label}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {data && (
         activeCount === 0 && !showAll ? (

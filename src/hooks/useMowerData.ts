@@ -3,6 +3,8 @@ import posthog from "posthog-js";
 import { type ConnectionState, type ImageMessage, FoxgloveClient } from "../lib/foxglove";
 import { type WalkPoint, getWalkPath } from "../lib/localApi";
 import {
+  type ActiveAlarm,
+  type RobotMode,
   type BatteryData,
   type BatteryHealthData,
   type CoverageImageData,
@@ -38,6 +40,8 @@ import {
   mapStringJson,
   mapTask,
   mapHeadingFused,
+  mapLightInfo,
+  mapAlarmStatus,
 } from "../lib/parsers";
 
 export interface MowerData {
@@ -62,6 +66,8 @@ export interface MowerData {
   planningPath: PathData | null;
   coverageImage: CoverageImageData | null;
   walkPath: WalkPoint[] | null;
+  robotMode: RobotMode | null;
+  alarms: ActiveAlarm[] | null;
 }
 
 // Driven track comes over the local HTTP API, not the bridge: poll it only
@@ -113,6 +119,8 @@ export function useMowerData() {
     planningPath: null,
     coverageImage: null,
     walkPath: null,
+    robotMode: null,
+    alarms: null,
   });
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [rosLogs, setRosLogs] = useState<RosLogEntry[]>([]);
@@ -194,6 +202,16 @@ export function useMowerData() {
               const next = [...prev, notice];
               return next.length > 100 ? next.slice(-100) : next;
             });
+            break;
+          }
+          case "/light_info": {
+            const robotMode = mapLightInfo(msg);
+            if (robotMode) setData((d) => (d.robotMode?.code === robotMode.code ? d : { ...d, robotMode }));
+            break;
+          }
+          case "/alarm_status": {
+            const alarms = mapAlarmStatus(msg);
+            setData((d) => ({ ...d, alarms }));
             break;
           }
           case "/heading_fused": {

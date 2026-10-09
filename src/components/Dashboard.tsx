@@ -94,6 +94,8 @@ export function Dashboard({
         <StatusWidget
           data={data.mowerStatus}
           rainSensorValue={data.sensorInfo?.rain_sensor_value != null ? Number(data.sensorInfo.rain_sensor_value) : null}
+          robotMode={data.robotMode}
+          alarms={data.alarms}
           id="widget-mower-status"
         />
         <TaskWidget data={data.task} geojsonTask={data.geojsonTask} id="widget-task" />

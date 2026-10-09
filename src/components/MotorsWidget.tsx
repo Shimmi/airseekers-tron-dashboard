@@ -80,7 +80,10 @@ function WheelCard({ label, motor }: { label: string; motor: MotorData }) {
       <div className="motor-wheel-header">
         <span className="motor-wheel-dot" style={{ background: color }} />
         <span className="motor-wheel-label">{label}</span>
-        <span className={`motor-wheel-status${active ? " motor-wheel-status--active" : ""}`}>
+        <span
+          className={`motor-wheel-status${active ? " motor-wheel-status--active" : ""}`}
+          title={motor.status === "Holding" ? "Position hold: motor energised at standstill (normal when docked)" : undefined}
+        >
           {motor.status}
         </span>
       </div>
