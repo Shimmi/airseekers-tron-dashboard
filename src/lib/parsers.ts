@@ -476,7 +476,8 @@ const NOTICE_LABELS: Record<number, string> = {
 };
 
 const MODULE_LABELS: Record<number, string> = {
-  0: "Logic", 1: "Base", 2: "Loc", 3: "Perception", 4: "Controller",
+  // 1 is the mower_base node (chassis/serial driver), not the RTK base station.
+  0: "Logic", 1: "Mower base", 2: "Loc", 3: "Perception", 4: "Controller",
 };
 
 export type NoticeLevel = "info" | "warn" | "error";
@@ -487,6 +488,8 @@ export interface NoticeEntry {
   module: string;
   level: NoticeLevel;
   time: string;
+  /** Same code re-sent back-to-back (the mower re-broadcasts its last notice ~1 Hz). */
+  repeat?: { count: number; lastTime: string };
 }
 
 function noticeLevel(code: number): NoticeLevel {
@@ -507,6 +510,27 @@ export function mapNotice(msg: Record<string, unknown>): NoticeEntry {
     module: MODULE_LABELS[moduleCode] ?? `${moduleCode}`,
     level: noticeLevel(code),
     time: ts > 0 ? new Date(ts * 1000).toLocaleTimeString() : new Date().toLocaleTimeString(),
+  };
+}
+
+// ── Planner area (/planning/info) ──
+// The coverage planner's own area accounting for the current task. Published
+// rarely (~once per 25 s idle); total is non-zero whenever a task is loaded.
+
+export interface PlannerInfoData {
+  totalArea: number;
+  cutArea: number;
+  areaCount: number;
+}
+
+export function mapPlannerInfo(msg: Record<string, unknown>): PlannerInfoData | null {
+  const total = Number(msg.task_area_total);
+  const cut = Number(msg.task_area_cut);
+  if (!Number.isFinite(total) || !Number.isFinite(cut)) return null;
+  return {
+    totalArea: total,
+    cutArea: cut,
+    areaCount: Array.isArray(msg.task_area) ? msg.task_area.length : 0,
   };
 }
 
@@ -567,6 +591,32 @@ export function mapAlarmStatus(msg: Record<string, unknown>): ActiveAlarm[] {
     }
   }
   return alarms;
+}
+
+// ── Physical buttons (/mower_sensor_info.key_pressed) ──
+// Bitmask, set as a one-shot pulse on press — not a held level.
+const KEY_LABELS: [bit: number, label: string][] = [
+  [1, "Work / Pause"],
+  [2, "Go dock"],
+  [4, "Power (short)"],
+  [8, "Power (long)"],
+  [16, "Dock + Pause"],
+];
+
+/**
+ * Notice-log entry for a button press. Uses a negative code (−bitmask) so it
+ * can't collide with vendor notice codes and repeats of the same press collapse.
+ */
+export function mapKeyPress(keyPressed: number): NoticeEntry | null {
+  if (!Number.isFinite(keyPressed) || keyPressed <= 0) return null;
+  const names = KEY_LABELS.filter(([bit]) => keyPressed & bit).map(([, label]) => label);
+  return {
+    code: -keyPressed,
+    label: `Button pressed: ${names.length ? names.join(" + ") : `key ${keyPressed}`}`,
+    module: "Mower button",
+    level: "info",
+    time: new Date().toLocaleTimeString(),
+  };
 }
 
 export function mapHeadingFused(msg: Record<string, unknown>): number | null {

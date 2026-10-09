@@ -98,7 +98,7 @@ export function Dashboard({
           alarms={data.alarms}
           id="widget-mower-status"
         />
-        <TaskWidget data={data.task} geojsonTask={data.geojsonTask} id="widget-task" />
+        <TaskWidget data={data.task} geojsonTask={data.geojsonTask} planner={data.plannerInfo} id="widget-task" />
         <MotorsWidget
           data={data.motors}
           cutterHeight={data.task?.params[0]?.cutterHeight ?? null}

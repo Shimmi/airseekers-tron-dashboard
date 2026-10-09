@@ -131,6 +131,14 @@ export function NoticeLogWidget({ notices, id }: { notices: NoticeEntry[]; id?: 
                 </span>
                 <span className="notice-module">{item.entry.module}</span>
                 <span className="notice-msg">{item.entry.label}</span>
+                {item.entry.repeat && (
+                  <span
+                    className="notice-count notice-count--repeat"
+                    title={`Re-sent ${item.entry.repeat.count}× since ${item.entry.time}, last at ${item.entry.repeat.lastTime}. The mower re-broadcasts its latest notice about once a second, so this is likely one condition, not new events.`}
+                  >
+                    &#8635; {item.entry.repeat.lastTime}
+                  </span>
+                )}
                 {item.count > 1 && (
                   <span className="notice-count">&times;{item.count}</span>
                 )}

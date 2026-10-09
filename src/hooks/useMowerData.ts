@@ -5,6 +5,7 @@ import { type WalkPoint, getWalkPath } from "../lib/localApi";
 import {
   type ActiveAlarm,
   type RobotMode,
+  type PlannerInfoData,
   type BatteryData,
   type BatteryHealthData,
   type CoverageImageData,
@@ -41,6 +42,8 @@ import {
   mapTask,
   mapHeadingFused,
   mapLightInfo,
+  mapPlannerInfo,
+  mapKeyPress,
   mapAlarmStatus,
 } from "../lib/parsers";
 
@@ -67,12 +70,15 @@ export interface MowerData {
   coverageImage: CoverageImageData | null;
   walkPath: WalkPoint[] | null;
   robotMode: RobotMode | null;
+  plannerInfo: PlannerInfoData | null;
   alarms: ActiveAlarm[] | null;
 }
 
 // Driven track comes over the local HTTP API, not the bridge: poll it only
 // while a task can still extend it.
 const WALK_PATH_POLL_MS = 5000;
+// Notices with the same code closer together than this count as one ongoing repeat.
+const NOTICE_REPEAT_WINDOW_MS = 5000;
 
 function hostFromUrl(url: string): string | null {
   try {
@@ -120,6 +126,7 @@ export function useMowerData() {
     coverageImage: null,
     walkPath: null,
     robotMode: null,
+    plannerInfo: null,
     alarms: null,
   });
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -135,6 +142,8 @@ export function useMowerData() {
   const [pageVisible, setPageVisible] = useState(() => !document.hidden);
   const walkRef = useRef<{ key: string; points: WalkPoint[] }>({ key: "", points: [] });
   const walkErrorRef = useRef<string | null>(null);
+  const lastKeyRef = useRef(0);
+  const lastNoticeRef = useRef<{ code: number; at: number } | null>(null);
   const clientRef = useRef<FoxgloveClient | null>(null);
   const imageSubscribers = useRef<Map<string, (msg: ImageMessage) => void>>(new Map());
   const pendingCallIds = useRef<Map<number, string>>(new Map());
@@ -198,7 +207,19 @@ export function useMowerData() {
             const nowSec = Date.now() / 1000;
             const ts = Number(msg.timestamp ?? 0);
             if (ts > 0 && nowSec - ts > 120) break;
+            // The mower re-sends its latest notice about once a second with a
+            // fresh timestamp. Fold back-to-back repeats into the first entry
+            // instead of logging (and counting) each one as a new event.
+            const last = lastNoticeRef.current;
+            const now = Date.now();
+            const isRepeat = last != null && last.code === notice.code && now - last.at < NOTICE_REPEAT_WINDOW_MS;
+            lastNoticeRef.current = { code: notice.code, at: now };
             setNotices((prev) => {
+              const tail = prev[prev.length - 1];
+              if (isRepeat && tail?.code === notice.code) {
+                const count = (tail.repeat?.count ?? 1) + 1;
+                return [...prev.slice(0, -1), { ...tail, repeat: { count, lastTime: notice.time } }];
+              }
               const next = [...prev, notice];
               return next.length > 100 ? next.slice(-100) : next;
             });
@@ -207,6 +228,11 @@ export function useMowerData() {
           case "/light_info": {
             const robotMode = mapLightInfo(msg);
             if (robotMode) setData((d) => (d.robotMode?.code === robotMode.code ? d : { ...d, robotMode }));
+            break;
+          }
+          case "/planning/info": {
+            const plannerInfo = mapPlannerInfo(msg);
+            if (plannerInfo) setData((d) => ({ ...d, plannerInfo }));
             break;
           }
           case "/alarm_status": {
@@ -246,6 +272,18 @@ export function useMowerData() {
           }
           case "/mower_sensor_info": {
             setData((d) => ({ ...d, sensorInfo: msg }));
+            // key_pressed is a pulse: log on the rising edge only.
+            const key = Number(msg.key_pressed ?? 0);
+            if (key !== lastKeyRef.current) {
+              lastKeyRef.current = key;
+              const press = mapKeyPress(key);
+              if (press) {
+                setNotices((prev) => {
+                  const next = [...prev, press];
+                  return next.length > 100 ? next.slice(-100) : next;
+                });
+              }
+            }
             break;
           }
           case "/robot_config": {

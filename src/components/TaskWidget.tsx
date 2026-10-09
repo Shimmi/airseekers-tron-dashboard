@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import { Badge, Card, MetricRow } from "./Card";
-import type { TaskData } from "../lib/parsers";
+import type { PlannerInfoData, TaskData } from "../lib/parsers";
 import { resolveTaskZones, formatArea, type ZoneInfo } from "../lib/geojson";
 
 const STATE_VARIANT: Record<string, "green" | "yellow" | "blue" | "gray"> = {
@@ -44,9 +44,10 @@ function ProgressBar({ fraction }: { fraction: number }) {
   );
 }
 
-export function TaskWidget({ data, geojsonTask, id }: {
+export function TaskWidget({ data, geojsonTask, planner, id }: {
   data: TaskData | null;
   geojsonTask: unknown;
+  planner: PlannerInfoData | null;
   id?: string;
 }) {
   const state = data?.state || "";
@@ -129,6 +130,12 @@ export function TaskWidget({ data, geojsonTask, id }: {
             }
           />
           {progress != null && <ProgressBar fraction={progress} />}
+          {planner && planner.totalArea > 0 && (
+            <MetricRow
+              label="Planner"
+              value={`${formatArea(planner.cutArea)} of ${formatArea(planner.totalArea)}`}
+            />
+          )}
         </>
       )}
     </Card>

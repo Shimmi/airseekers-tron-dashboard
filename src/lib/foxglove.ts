@@ -348,6 +348,7 @@ export class FoxgloveClient {
       "/mower_base/dev_base_info",
       "/notice_code",
       "/light_info",
+      "/planning/info",
       "/alarm_status",
       "/heading_fused",
       "/rosout_agg",
