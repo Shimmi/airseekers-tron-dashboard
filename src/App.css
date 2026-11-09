@@ -315,6 +315,22 @@
   line-height: 1.5;
 }
 
+.connect-fw-warning {
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--red) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--red) 30%, transparent);
+  font-size: 13px;
+  color: var(--text1);
+  line-height: 1.5;
+}
+
+.connect-fw-warning p {
+  margin: 8px 0 0;
+  color: var(--text2);
+}
+
 .connect-pna-warning code {
   font-size: 12px;
   padding: 1px 5px;
@@ -1102,6 +1118,55 @@
   color: var(--text3);
   font-size: 13px;
   padding: 8px 0;
+}
+
+/* Blade fault — stays until the blade spins normally again or is dismissed */
+.blade-fault {
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--red);
+  background: color-mix(in srgb, var(--red) 12%, transparent);
+}
+
+.blade-fault-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.blade-fault-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--red);
+}
+
+.blade-fault-time {
+  font-size: 11px;
+  color: var(--text2);
+  font-variant-numeric: tabular-nums;
+}
+
+.blade-fault-dismiss {
+  border: none;
+  background: none;
+  color: var(--text2);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+.blade-fault-dismiss:hover {
+  color: var(--text);
+}
+
+.blade-fault-hint {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text2);
 }
 
 /* Blade hero — circular gauge + metrics */
@@ -2183,6 +2248,19 @@
   font-size: 13px;
   background: #000;
   border-radius: 8px;
+}
+
+.map-empty--error {
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 24px;
+  text-align: center;
+  color: var(--text2);
+  line-height: 1.5;
+}
+
+.map-empty--error strong {
+  color: var(--yellow);
 }
 
 .log-badge {

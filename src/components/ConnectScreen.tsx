@@ -65,6 +65,18 @@ export function ConnectScreen({
           Connect to your Airseekers Tron mower
         </p>
 
+        <div className="connect-fw-warning" role="alert">
+          <strong>Local access disabled by Airseekers.</strong><br /><br /> The latest
+          firmware update turned off the Foxglove WebSocket bridge this
+          dashboard relies on, so it can no longer connect to updated mowers.
+          Unfortunately there is nothing we can do about it.
+          <p>
+            Please remember, this is a community project, not an official
+            Airseekers one. If you'd like local access back, consider sending
+            Airseekers feedback and letting them know you want it supported.
+          </p>
+        </div>
+
         {pnaBlocked && (
           <div className="connect-pna-warning">
             <strong>Chrome cannot connect to local devices</strong> from a hosted page.
