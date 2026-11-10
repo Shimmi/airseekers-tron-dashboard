@@ -30,6 +30,7 @@ export function App() {
     setDynamicTopics,
     setOverlayTopics,
     setWalkPathEnabled,
+    dismissBladeFault,
     subscribeImage,
     unsubscribeImage,
   } = useMowerData();
@@ -77,6 +78,7 @@ export function App() {
             clearEstopStatus={clearEstopStatus}
             onStop={stop}
             onClearEstop={clearEstop}
+            onDismissBladeFault={dismissBladeFault}
             setOverlayTopics={setOverlayTopics}
             setWalkPathEnabled={setWalkPathEnabled}
             walkPathError={walkPathError}

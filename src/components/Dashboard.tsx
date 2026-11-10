@@ -27,6 +27,7 @@ export function Dashboard({
   clearEstopStatus,
   onStop,
   onClearEstop,
+  onDismissBladeFault,
   setOverlayTopics,
   setWalkPathEnabled,
   walkPathError,
@@ -40,6 +41,7 @@ export function Dashboard({
   clearEstopStatus: ServiceCallStatus;
   onStop: () => void;
   onClearEstop: () => void;
+  onDismissBladeFault: () => void;
   setOverlayTopics: (topics: string[]) => void;
   setWalkPathEnabled: (enabled: boolean) => void;
   walkPathError: string | null;
@@ -102,6 +104,8 @@ export function Dashboard({
         <MotorsWidget
           data={data.motors}
           cutterHeight={data.task?.params[0]?.cutterHeight ?? null}
+          bladeFault={data.bladeFault}
+          onDismissBladeFault={onDismissBladeFault}
           id="widget-motors"
         />
         <NetworkWidget data={data.network} id="widget-network" />

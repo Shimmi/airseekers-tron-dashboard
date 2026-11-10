@@ -44,6 +44,8 @@ import {
   mapLightInfo,
   mapPlannerInfo,
   mapKeyPress,
+  BLADE_FAULT_CODES,
+  type BladeFault,
   mapAlarmStatus,
 } from "../lib/parsers";
 
@@ -71,6 +73,7 @@ export interface MowerData {
   walkPath: WalkPoint[] | null;
   robotMode: RobotMode | null;
   plannerInfo: PlannerInfoData | null;
+  bladeFault: BladeFault | null;
   alarms: ActiveAlarm[] | null;
 }
 
@@ -79,6 +82,8 @@ export interface MowerData {
 const WALK_PATH_POLL_MS = 5000;
 // Notices with the same code closer together than this count as one ongoing repeat.
 const NOTICE_REPEAT_WINDOW_MS = 5000;
+// Above this the vendor itself treats the blade as cutting (is_cutting: rpm > 500).
+const BLADE_OK_RPM = 500;
 
 function hostFromUrl(url: string): string | null {
   try {
@@ -127,6 +132,7 @@ export function useMowerData() {
     walkPath: null,
     robotMode: null,
     plannerInfo: null,
+    bladeFault: null,
     alarms: null,
   });
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -194,7 +200,17 @@ export function useMowerData() {
           }
           case "/mower_base/motor_info": {
             const motors = mapMotors(msg);
-            setData((d) => ({ ...d, motors }));
+            setData((d) => {
+              let bladeFault = d.bladeFault;
+              if (motors.cutter.error) {
+                if (bladeFault?.source !== "motor") {
+                  bladeFault = { label: `Blade motor: ${motors.cutter.status}`, time: new Date().toLocaleTimeString(), source: "motor" };
+                }
+              } else if (bladeFault && Math.abs(motors.cutter.rpm) > BLADE_OK_RPM) {
+                bladeFault = null; // spinning normally again
+              }
+              return { ...d, motors, bladeFault };
+            });
             break;
           }
           case "/mower_base/dev_base_info": {
@@ -207,13 +223,17 @@ export function useMowerData() {
             const nowSec = Date.now() / 1000;
             const ts = Number(msg.timestamp ?? 0);
             if (ts > 0 && nowSec - ts > 120) break;
-            // The mower re-sends its latest notice about once a second with a
-            // fresh timestamp. Fold back-to-back repeats into the first entry
-            // instead of logging (and counting) each one as a new event.
+            // The mower re-sends a notice for an ongoing condition about once a
+            // second with a fresh timestamp. Fold back-to-back repeats into the
+            // first entry instead of logging (and counting) each as a new event.
             const last = lastNoticeRef.current;
             const now = Date.now();
             const isRepeat = last != null && last.code === notice.code && now - last.at < NOTICE_REPEAT_WINDOW_MS;
             lastNoticeRef.current = { code: notice.code, at: now };
+            // Re-broadcasts of the same notice must not re-raise a cleared fault.
+            if (!isRepeat && BLADE_FAULT_CODES.has(notice.code)) {
+              setData((d) => ({ ...d, bladeFault: { label: notice.label, time: notice.time, source: "notice" } }));
+            }
             setNotices((prev) => {
               const tail = prev[prev.length - 1];
               if (isRepeat && tail?.code === notice.code) {
@@ -550,6 +570,10 @@ export function useMowerData() {
     }
   }, []);
 
+  const dismissBladeFault = useCallback(() => {
+    setData((d) => ({ ...d, bladeFault: null }));
+  }, []);
+
   const setDynamicTopics = useCallback((topics: string[]) => {
     clientRef.current?.setDynamicTopics(topics);
   }, []);
@@ -594,6 +618,7 @@ export function useMowerData() {
     setDynamicTopics,
     setOverlayTopics,
     setWalkPathEnabled,
+    dismissBladeFault,
     subscribeImage,
     unsubscribeImage,
   };

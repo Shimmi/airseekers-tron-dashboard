@@ -186,6 +186,17 @@ const coverageFill: LayerProps = {
   paint: { "raster-opacity": 0.45 },
 };
 
+// Mapbox GL needs WebGL; when the browser can't create a context (GPU process
+// crashed, driver blocklisted, acceleration off) it renders an empty canvas.
+function webglAvailable(): boolean {
+  try {
+    const canvas = document.createElement("canvas");
+    return Boolean(canvas.getContext("webgl2") ?? canvas.getContext("webgl"));
+  } catch {
+    return false;
+  }
+}
+
 const INTERACTIVE_LAYERS = ["mowing-fill", "poly-fill", "dock-approach-fill", "dock-station-fill", "channel-line", "points"];
 
 const LEGEND: { className: string; label: string }[] = [
@@ -308,6 +319,7 @@ export function MapView({
   // on it — but only once, and without blocking a later yard fit.
   const didRobotJumpRef = useRef(false);
   const [zoom, setZoom] = useState(1);
+  const [webglOk, setWebglOk] = useState(webglAvailable);
 
   const dockInfo = useMemo(() => {
     const fc = geojsonTask as GeoJSON.FeatureCollection | null;
@@ -522,6 +534,18 @@ export function MapView({
     );
   }
 
+  if (!webglOk) {
+    return (
+      <div className="map-empty map-empty--error">
+        <strong>Map can't start — WebGL isn't available in this browser.</strong>
+        <span>
+          Restart the browser (not just the tab). If it persists, enable hardware acceleration and
+          check WebGL under <code>about:support</code> → Graphics (Firefox) or <code>chrome://gpu</code>.
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div ref={frameRef} className="map-frame map-frame--mapbox">
       <Map
@@ -532,6 +556,9 @@ export function MapView({
         style={{ width: "100%", height: "100%" }}
         interactiveLayerIds={INTERACTIVE_LAYERS}
         onLoad={() => setLoaded(true)}
+        onError={(e) => {
+          if (/webgl/i.test(e.error?.message ?? "")) setWebglOk(false);
+        }}
         onZoom={(e) => setZoom(e.viewState.zoom)}
         onClick={(e) => showFromEvent(e, "click")}
         onMouseMove={handleMouseMove}

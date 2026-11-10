@@ -1,4 +1,4 @@
-import type { MotorData, MotorsData } from "../lib/parsers";
+import type { BladeFault, MotorData, MotorsData } from "../lib/parsers";
 import { healthVar } from "../lib/status";
 import { Card } from "./Card";
 
@@ -119,10 +119,14 @@ function WheelCard({ label, motor }: { label: string; motor: MotorData }) {
 export function MotorsWidget({
   data,
   cutterHeight,
+  bladeFault,
+  onDismissBladeFault,
   id,
 }: {
   data: MotorsData | null;
   cutterHeight: number | null;
+  bladeFault: BladeFault | null;
+  onDismissBladeFault: () => void;
   id?: string;
 }) {
   if (!data) {
@@ -137,6 +141,20 @@ export function MotorsWidget({
 
   return (
     <Card title="Motors" id={id}>
+      {bladeFault && (
+        <div className="blade-fault" role="alert">
+          <div className="blade-fault-head">
+            <span className="blade-fault-title">{bladeFault.label}</span>
+            <span className="blade-fault-time">{bladeFault.time}</span>
+            <button className="blade-fault-dismiss" onClick={onDismissBladeFault} title="Dismiss" aria-label="Dismiss">
+              &times;
+            </button>
+          </div>
+          <div className="blade-fault-hint">
+            Possible jam — check the cutting disc for debris. Power the mower off before touching the blades.
+          </div>
+        </div>
+      )}
       <BladeHero motor={data.cutter} />
 
       <div className="motor-section-header">Drive</div>

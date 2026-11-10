@@ -488,16 +488,31 @@ export interface NoticeEntry {
   module: string;
   level: NoticeLevel;
   time: string;
-  /** Same code re-sent back-to-back (the mower re-broadcasts its last notice ~1 Hz). */
+  /** Same code re-sent back-to-back (the mower re-asserts an ongoing condition ~1 Hz). */
   repeat?: { count: number; lastTime: string };
 }
 
 function noticeLevel(code: number): NoticeLevel {
   if (code >= 100000 && code < 900000) return "error";
   if (code === 900015 || code === 900016 || code === 900017 || code === 900036 ||
+      code === 900039 || code === 900040 ||
       code === 900049 || code === 900055 || code === 900069 || code === 900107)
     return "warn";
   return "info";
+}
+
+/**
+ * Notices that point at the cutting disc: stalled / failed to start / electrical
+ * or thermal faults of the blade motor (vendor IotNotice). A jam (debris, cloth,
+ * grass wrap) typically surfaces as 600019 or 900039.
+ */
+export const BLADE_FAULT_CODES = new Set([600016, 600017, 600018, 600019, 900039]);
+
+/** A blade problem that persists until the blade is seen spinning normally again. */
+export interface BladeFault {
+  label: string;
+  time: string;
+  source: "notice" | "motor";
 }
 
 export function mapNotice(msg: Record<string, unknown>): NoticeEntry {
@@ -563,10 +578,11 @@ export function mapLightInfo(msg: Record<string, unknown>): RobotMode | null {
 }
 
 // ── Alarms (/alarm_status) ──
-// UInt64 bitmask; each bit maps to a notice code. Only these bits are known
-// (vendor status.proto via recon/external-mikey0000.md) — others show as "bit N".
+// UInt64 bitmask; each bit maps to a notice code. Bits 0–5 and 31 from the
+// vendor status.proto (recon/external-mikey0000.md); 15 observed live together
+// with a jammed blade (600019, 2026-10-09). Others show as "Alarm bit N".
 const ALARM_BIT_CODES: Record<number, number> = {
-  0: 900017, 1: 900018, 2: 400005, 3: 800002, 4: 900055, 5: 600004, 31: 100105,
+  0: 900017, 1: 900018, 2: 400005, 3: 800002, 4: 900055, 5: 600004, 15: 600019, 31: 100105,
 };
 
 export interface ActiveAlarm {
